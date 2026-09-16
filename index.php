@@ -208,16 +208,13 @@ require __DIR__ . '/includes/header.php';
         <?php foreach ($stripBase as $c): ?>
           <?php $logo = media_url($c); ?>
           <div class="logo-strip__cell<?= $logo ? ' has-logo' : '' ?>">
-            <?php $open = !empty($c['website']); ?>
-            <?php if ($open): ?>
-              <a href="<?= e($c['website']) ?>" target="_blank" rel="noopener noreferrer" title="<?= e($c['name']) ?>">
-            <?php endif; ?>
-            <?php if ($logo): ?>
-              <img src="<?= e($logo) ?>" alt="<?= e($c['name']) ?>" loading="lazy" decoding="async">
-            <?php else: ?>
-              <span class="logo-strip__name"><?= e($c['name']) ?></span>
-            <?php endif; ?>
-            <?php if ($open): ?></a><?php endif; ?>
+            <a href="<?= e(brand_url($c)) ?>" title="صفحه <?= e($c['name']) ?>">
+              <?php if ($logo): ?>
+                <img src="<?= e($logo) ?>" alt="<?= e($c['name']) ?>" loading="lazy" decoding="async">
+              <?php else: ?>
+                <span class="logo-strip__name"><?= e($c['name']) ?></span>
+              <?php endif; ?>
+            </a>
           </div>
         <?php endforeach; ?>
       </div>

@@ -38,8 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($act === 'group_delete') {
         $id = (int) ($_POST['id'] ?? 0);
 
-        foreach (q('SELECT `logo_file` FROM `clients` WHERE `group_id` = ?', [$id]) as $row) {
+        foreach (q('SELECT `id`,`logo_file`,`cover_file` FROM `clients` WHERE `group_id` = ?', [$id]) as $row) {
             delete_upload($row['logo_file']);
+            delete_upload($row['cover_file']);
+            foreach (q('SELECT `image_file` FROM `client_gallery` WHERE `client_id` = ?', [(int) $row['id']]) as $galleryRow) {
+                delete_upload($galleryRow['image_file']);
+            }
+            db_run('DELETE FROM `client_gallery` WHERE `client_id` = ?', [(int) $row['id']]);
         }
         db_run('DELETE FROM `clients` WHERE `group_id` = ?', [$id]);
         db_run('DELETE FROM `client_groups` WHERE `id` = ?', [$id]);
@@ -55,6 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name    = trim((string) ($_POST['name'] ?? ''));
         $logoUrl = trim((string) ($_POST['logo_url'] ?? ''));
         $website = trim((string) ($_POST['website'] ?? ''));
+        $intro   = trim((string) ($_POST['intro'] ?? ''));
+        $coverUrl = trim((string) ($_POST['cover_url'] ?? ''));
         $order   = (int) ($_POST['sort_order'] ?? 0);
         $visible = isset($_POST['visible']) ? 1 : 0;
         $featured = isset($_POST['featured']) ? 1 : 0;
@@ -73,11 +80,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('آدرس تصویر باید با http یا https شروع شود.', 'err');
             redirect('clients.php');
         }
+        if ($coverUrl !== '' && !preg_match('~^https?://~i', $coverUrl)) {
+            flash('آدرس تصویر کاور باید با http یا https شروع شود.', 'err');
+            redirect('clients.php');
+        }
         if ($website !== '' && !preg_match('~^https?://~i', $website)) {
             $website = 'https://' . $website;
         }
 
-        // آپلود لوگو
+        // آپلود لوگو و تصویر کاور صفحه اختصاصی
         $upload = upload_image('logo_file', 'logos', 2);
         if ($upload['error'] !== null) {
             flash($upload['error'], 'err');
@@ -85,7 +96,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $newFile = $upload['file'];
 
-        $removeLogo = isset($_POST['remove_logo']);
+        $coverUpload = upload_image('cover_file', 'clients', 4);
+        if ($coverUpload['error'] !== null) {
+            if ($newFile !== null) {
+                delete_upload($newFile);
+            }
+            flash($coverUpload['error'], 'err');
+            redirect('clients.php');
+        }
+        $newCoverFile = $coverUpload['file'];
+
+        $removeLogo  = isset($_POST['remove_logo']);
+        $removeCover = isset($_POST['remove_cover']);
 
         if ($id > 0) {
             $old = q1('SELECT * FROM `clients` WHERE `id` = ?', [$id]);
@@ -103,15 +125,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $finalFile = null;
             }
 
+            $finalCover = $old['cover_file'];
+            if ($newCoverFile !== null) {
+                $finalCover = $newCoverFile;
+                delete_upload($old['cover_file']);
+            } elseif ($removeCover) {
+                delete_upload($old['cover_file']);
+                $finalCover = null;
+            }
+
             db_run(
-                'UPDATE `clients` SET `group_id`=?,`name`=?,`logo_file`=?,`logo_url`=?,`website`=?,`featured`=?,`sort_order`=?,`visible`=? WHERE `id`=?',
-                [$groupId, $name, $finalFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $featured, $order, $visible, $id]
+                'UPDATE `clients` SET `group_id`=?,`name`=?,`logo_file`=?,`logo_url`=?,`website`=?,`intro`=?,`cover_file`=?,`cover_url`=?,`featured`=?,`sort_order`=?,`visible`=? WHERE `id`=?',
+                [$groupId, $name, $finalFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $intro !== '' ? $intro : null, $finalCover, $coverUrl !== '' ? $coverUrl : null, $featured, $order, $visible, $id]
             );
             flash('«' . $name . '» به‌روزرسانی شد.');
         } else {
             db_run(
-                'INSERT INTO `clients` (`group_id`,`name`,`logo_file`,`logo_url`,`website`,`featured`,`sort_order`,`visible`) VALUES (?,?,?,?,?,?,?,?)',
-                [$groupId, $name, $newFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $featured, $order, $visible]
+                'INSERT INTO `clients` (`group_id`,`name`,`logo_file`,`logo_url`,`website`,`intro`,`cover_file`,`cover_url`,`featured`,`sort_order`,`visible`) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+                [$groupId, $name, $newFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $intro !== '' ? $intro : null, $newCoverFile, $coverUrl !== '' ? $coverUrl : null, $featured, $order, $visible]
             );
             flash('«' . $name . '» اضافه شد.');
         }
@@ -124,8 +155,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row = q1('SELECT * FROM `clients` WHERE `id` = ?', [$id]);
         if ($row !== null) {
             delete_upload($row['logo_file']);
+            delete_upload($row['cover_file']);
+            foreach (q('SELECT `image_file` FROM `client_gallery` WHERE `client_id` = ?', [$id]) as $galleryRow) {
+                delete_upload($galleryRow['image_file']);
+            }
+            db_run('DELETE FROM `client_gallery` WHERE `client_id` = ?', [$id]);
             db_run('DELETE FROM `clients` WHERE `id` = ?', [$id]);
-            flash('همراه حذف شد.');
+            flash('همراه و صفحه اختصاصی آن حذف شد.');
         }
         redirect('clients.php');
     }
@@ -289,11 +325,37 @@ admin_head('برندها و لوگوها');
       </div>
     </div>
 
+    <div class="f">
+      <label for="intro">معرفی کوتاه صفحه اختصاصی <span class="muted">(اختیاری)</span></label>
+      <textarea id="intro" name="intro" rows="3" placeholder="مثلاً: طراحی هویت بصری و تولید محتوای این برند را از سال ... همراهی کرده‌ایم."><?= e($edit['intro'] ?? '') ?></textarea>
+      <p class="hint">این متن بالای صفحه اختصاصی برند نمایش داده می‌شود.</p>
+    </div>
+
+    <div class="row row--2">
+      <div class="f">
+        <label for="cover_file">تصویر اصلی صفحه برند</label>
+        <input id="cover_file" type="file" name="cover_file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+        <p class="hint">اختیاری — پیشنهاد: تصویر افقی با عرض حداقل ۱۲۰۰ پیکسل، حداکثر ۴ مگابایت.</p>
+        <?php if (!empty($edit['cover_file'])): ?>
+          <p class="hint" style="margin-top:10px">فایل فعلی: <code dir="ltr"><?= e($edit['cover_file']) ?></code></p>
+          <label class="inline" style="margin-top:8px">
+            <input type="checkbox" name="remove_cover" value="1">
+            حذف تصویر فعلی
+          </label>
+        <?php endif; ?>
+      </div>
+      <div class="f">
+        <label for="cover_url">یا آدرس تصویر اصلی</label>
+        <input id="cover_url" name="cover_url" dir="ltr" placeholder="https://example.com/brand-cover.jpg" value="<?= e($edit['cover_url'] ?? '') ?>">
+        <p class="hint">اگر فایل آپلود شود، فایل بر لینک اولویت دارد.</p>
+      </div>
+    </div>
+
     <div class="row">
       <div class="f">
         <label for="website">وب‌سایت <span class="muted">(اختیاری)</span></label>
         <input id="website" name="website" dir="ltr" placeholder="https://" value="<?= e($edit['website'] ?? '') ?>">
-        <p class="hint">با کلیک روی لوگو در سایت، این آدرس باز می‌شود.</p>
+        <p class="hint">در صفحه اختصاصی برند، دکمه‌ای برای باز کردن این آدرس نمایش داده می‌شود.</p>
       </div>
       <div class="f">
         <label for="sort_order">ترتیب نمایش</label>
@@ -434,6 +496,7 @@ admin_head('برندها و لوگوها');
                 </button>
               </form>
 
+              <a class="btn btn--ghost btn--sm" href="gallery.php?client=<?= (int) $c['id'] ?>">صفحه و گالری</a>
               <a class="btn btn--ghost btn--sm" href="clients.php?edit=<?= (int) $c['id'] ?>#form">ویرایش</a>
 
               <form method="post">

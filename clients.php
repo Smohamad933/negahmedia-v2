@@ -94,18 +94,14 @@ require __DIR__ . '/includes/header.php';
             <?php foreach ($list as $client): ?>
               <?php $logo = media_url($client); ?>
               <li class="wall__cell<?= $logo ? ' has-logo' : '' ?>">
-                <?php $open = !empty($client['website']); ?>
-                <?php if ($open): ?>
-                  <a href="<?= e($client['website']) ?>" target="_blank" rel="noopener noreferrer" title="<?= e($client['name']) ?>">
-                <?php endif; ?>
-
-                <?php if ($logo): ?>
-                  <img src="<?= e($logo) ?>" alt="<?= e($client['name']) ?>" loading="lazy" decoding="async">
-                <?php else: ?>
-                  <span class="wall__name"><?= e($client['name']) ?></span>
-                <?php endif; ?>
-
-                <?php if ($open): ?></a><?php endif; ?>
+                <a href="<?= e(brand_url($client)) ?>" title="مشاهده صفحه <?= e($client['name']) ?>">
+                  <?php if ($logo): ?>
+                    <img src="<?= e($logo) ?>" alt="<?= e($client['name']) ?>" loading="lazy" decoding="async">
+                  <?php else: ?>
+                    <span class="wall__name"><?= e($client['name']) ?></span>
+                  <?php endif; ?>
+                  <span class="wall__go" aria-hidden="true">مشاهده صفحه ←</span>
+                </a>
               </li>
             <?php endforeach; ?>
           </ul>

@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 /** نسخه ساختار دیتابیس — با هر تغییر ساختار یک عدد اضافه شود */
-const NEGAH_DB_VERSION = 3;
+const NEGAH_DB_VERSION = 4;
 
 /** @return string[] فهرست دستورات CREATE TABLE */
 function schema_statements(): array
@@ -74,12 +74,31 @@ function schema_statements(): array
                 `logo_file` VARCHAR(255) DEFAULT NULL,
                 `logo_url` VARCHAR(600) DEFAULT NULL,
                 `website` VARCHAR(400) DEFAULT NULL,
+                `intro` TEXT DEFAULT NULL,
+                `cover_file` VARCHAR(255) DEFAULT NULL,
+                `cover_url` VARCHAR(600) DEFAULT NULL,
                 `featured` TINYINT(1) NOT NULL DEFAULT 0,
                 `sort_order` INT NOT NULL DEFAULT 0,
                 `visible` TINYINT(1) NOT NULL DEFAULT 1,
                 PRIMARY KEY (`id`),
                 KEY `idx_group` (`group_id`),
                 KEY `idx_featured` (`featured`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+            "CREATE TABLE IF NOT EXISTS `client_gallery` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `client_id` INT UNSIGNED NOT NULL,
+                `title` VARCHAR(220) NOT NULL,
+                `category` VARCHAR(140) DEFAULT NULL,
+                `description` TEXT DEFAULT NULL,
+                `image_file` VARCHAR(255) DEFAULT NULL,
+                `image_url` VARCHAR(600) DEFAULT NULL,
+                `link` VARCHAR(600) DEFAULT NULL,
+                `sort_order` INT NOT NULL DEFAULT 0,
+                `visible` TINYINT(1) NOT NULL DEFAULT 1,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_client_gallery_client` (`client_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
             "CREATE TABLE IF NOT EXISTS `projects` (
@@ -165,9 +184,26 @@ function schema_statements(): array
             `logo_file` TEXT DEFAULT NULL,
             `logo_url` TEXT DEFAULT NULL,
             `website` TEXT DEFAULT NULL,
+            `intro` TEXT DEFAULT NULL,
+            `cover_file` TEXT DEFAULT NULL,
+            `cover_url` TEXT DEFAULT NULL,
             `featured` INTEGER NOT NULL DEFAULT 0,
             `sort_order` INTEGER NOT NULL DEFAULT 0,
             `visible` INTEGER NOT NULL DEFAULT 1
+        )",
+
+        "CREATE TABLE IF NOT EXISTS `client_gallery` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+            `client_id` INTEGER NOT NULL,
+            `title` TEXT NOT NULL,
+            `category` TEXT DEFAULT NULL,
+            `description` TEXT DEFAULT NULL,
+            `image_file` TEXT DEFAULT NULL,
+            `image_url` TEXT DEFAULT NULL,
+            `link` TEXT DEFAULT NULL,
+            `sort_order` INTEGER NOT NULL DEFAULT 0,
+            `visible` INTEGER NOT NULL DEFAULT 1,
+            `created_at` TEXT NOT NULL DEFAULT (datetime('now','localtime'))
         )",
 
         "CREATE TABLE IF NOT EXISTS `projects` (
@@ -208,6 +244,7 @@ function schema_indexes(): void
     $indexes = [
         "CREATE INDEX IF NOT EXISTS `idx_clients_group` ON `clients` (`group_id`)",
         "CREATE INDEX IF NOT EXISTS `idx_clients_featured` ON `clients` (`featured`)",
+        "CREATE INDEX IF NOT EXISTS `idx_client_gallery_client` ON `client_gallery` (`client_id`)",
         "CREATE INDEX IF NOT EXISTS `idx_messages_read` ON `messages` (`is_read`)",
     ];
     foreach ($indexes as $sql) {
@@ -254,6 +291,15 @@ function schema_migrate(): void
             'featured' => db_driver() === 'mysql'
                 ? "ALTER TABLE `clients` ADD COLUMN `featured` TINYINT(1) NOT NULL DEFAULT 0"
                 : "ALTER TABLE `clients` ADD COLUMN `featured` INTEGER NOT NULL DEFAULT 0",
+            'intro' => db_driver() === 'mysql'
+                ? "ALTER TABLE `clients` ADD COLUMN `intro` TEXT DEFAULT NULL"
+                : "ALTER TABLE `clients` ADD COLUMN `intro` TEXT DEFAULT NULL",
+            'cover_file' => db_driver() === 'mysql'
+                ? "ALTER TABLE `clients` ADD COLUMN `cover_file` VARCHAR(255) DEFAULT NULL"
+                : "ALTER TABLE `clients` ADD COLUMN `cover_file` TEXT DEFAULT NULL",
+            'cover_url' => db_driver() === 'mysql'
+                ? "ALTER TABLE `clients` ADD COLUMN `cover_url` VARCHAR(600) DEFAULT NULL"
+                : "ALTER TABLE `clients` ADD COLUMN `cover_url` TEXT DEFAULT NULL",
         ],
         'process_steps' => [
             'visible' => db_driver() === 'mysql'
@@ -280,6 +326,41 @@ function schema_migrate(): void
                 }
             }
         }
+    }
+
+    $gallerySql = db_driver() === 'mysql'
+        ? "CREATE TABLE IF NOT EXISTS `client_gallery` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `client_id` INT UNSIGNED NOT NULL,
+            `title` VARCHAR(220) NOT NULL,
+            `category` VARCHAR(140) DEFAULT NULL,
+            `description` TEXT DEFAULT NULL,
+            `image_file` VARCHAR(255) DEFAULT NULL,
+            `image_url` VARCHAR(600) DEFAULT NULL,
+            `link` VARCHAR(600) DEFAULT NULL,
+            `sort_order` INT NOT NULL DEFAULT 0,
+            `visible` TINYINT(1) NOT NULL DEFAULT 1,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_client_gallery_client` (`client_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        : "CREATE TABLE IF NOT EXISTS `client_gallery` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+            `client_id` INTEGER NOT NULL,
+            `title` TEXT NOT NULL,
+            `category` TEXT DEFAULT NULL,
+            `description` TEXT DEFAULT NULL,
+            `image_file` TEXT DEFAULT NULL,
+            `image_url` TEXT DEFAULT NULL,
+            `link` TEXT DEFAULT NULL,
+            `sort_order` INTEGER NOT NULL DEFAULT 0,
+            `visible` INTEGER NOT NULL DEFAULT 1,
+            `created_at` TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        )";
+    try {
+        db()->exec($gallerySql);
+    } catch (Throwable $e) {
+        // نصب‌های قدیمی باید بدون از دست رفتن داده ادامه پیدا کنند.
     }
 
     schema_indexes();

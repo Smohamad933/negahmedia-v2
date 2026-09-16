@@ -20,8 +20,8 @@
   --muted:     #6F665A;
   --line:      rgba(22, 19, 15, .13);
   --line-soft: rgba(22, 19, 15, .07);
-  --accent:    #A8752E;
-  --accent-l  rgba(168, 117, 46, .10);
+  --accent:    #0A9F83;
+  --accent-l:   rgba(10, 159, 131, .10);
   --danger:    #8C3330;
   --ok:        #3F6B43;
   --side:      #131110;
@@ -235,6 +235,33 @@ td.num { font-variant-numeric: tabular-nums; }
 .logo-card__name { font-size: 13.5px; font-weight: 600; line-height: 1.6; }
 .logo-card__meta { font-size: 11.5px; color: var(--muted); }
 .logo-card__act { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+
+.gallery-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+.gallery-admin-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.gallery-admin-card__media {
+  height: 150px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line-soft);
+}
+.gallery-admin-card__media img { width: 100%; height: 100%; object-fit: cover; }
+.gallery-admin-card__body { padding: 13px 14px 8px; }
+.gallery-admin-card__body h3 { font-size: 15px; line-height: 1.65; margin: 0; }
+.gallery-admin-card__body p { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.gallery-admin-card__body small { display: block; color: var(--muted); font-size: 12px; line-height: 1.75; margin-top: 7px; }
+.gallery-admin-card > .logo-card__act { padding: 0 12px 12px; }
 
 .pick {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));

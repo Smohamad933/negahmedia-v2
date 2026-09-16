@@ -9,7 +9,7 @@ require_once __DIR__ . '/includes/config.php';
 $cfgFile = __DIR__ . '/includes/config.php';
 
 /* --------- افزودن پوشه‌های موردنیاز --------- */
-foreach (['data', 'uploads', 'uploads/logos', 'uploads/projects', 'uploads/fonts'] as $dir) {
+foreach (['data', 'uploads', 'uploads/logos', 'uploads/projects', 'uploads/clients', 'uploads/gallery', 'uploads/fonts'] as $dir) {
     if (!is_dir(__DIR__ . '/' . $dir)) {
         @mkdir(__DIR__ . '/' . $dir, 0755, true);
     }
@@ -172,15 +172,15 @@ fieldset{border:1px solid rgba(23,19,16,.14);padding:20px;margin:0 0 22px}
 legend{font-size:13px;font-weight:700;padding:0 8px;color:#6E655A}
 label{display:block;font-size:13.5px;font-weight:600;margin-bottom:6px}
 input,select{width:100%;padding:11px 13px;border:1px solid rgba(23,19,16,.18);background:#fff;margin-bottom:14px;font:inherit;outline:none}
-input:focus,select:focus{border-color:#A8752E}
+input:focus,select:focus{border-color:#0A9F83}
 .hint{font-size:13px;color:#6E655A;margin:-8px 0 14px}
 button{padding:13px 30px;background:#171310;color:#F6F4EF;border:0;font:inherit;font-weight:600;cursor:pointer}
-button:hover{background:#A8752E}
+button:hover{background:#0A9F83}
 .err{padding:12px 16px;border:1px solid #BE5A50;color:#8C3330;background:#FDF3F2;margin-bottom:20px;font-size:14px}
 .err ul{margin:0;padding-inline-start:18px}
-.ok{padding:16px;border:1px solid #A8752E;background:rgba(168,117,46,.07);margin-bottom:20px}
+.ok{padding:16px;border:1px solid #0A9F83;background:rgba(168,117,46,.07);margin-bottom:20px}
 ol{padding-inline-start:20px}
-a{color:#A8752E}
+a{color:#0A9F83}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
 @media(max-width:560px){.grid2{grid-template-columns:1fr}.card{padding:26px 20px}}
 code{background:#F6F4EF;padding:1px 6px;font-family:ui-monospace,Menlo,monospace;font-size:13.5px;direction:ltr;display:inline-block}

@@ -119,9 +119,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
 }
 
-$accent = setting('accent', '#A8752E');
+$accent = setting('accent', '#0A9F83');
 if (!is_hex_color($accent)) {
-    $accent = '#A8752E';
+    $accent = '#0A9F83';
 }
 
 $fontFile    = setting('font_file');

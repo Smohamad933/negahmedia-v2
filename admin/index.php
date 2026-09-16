@@ -104,9 +104,9 @@ admin_head('داشبورد');
       <p style="margin-top:12px"><a class="btn btn--sm" href="settings.php">متن‌ها و تماس</a></p>
     </div>
     <div class="f">
-      <label>۲. لوگوی کارفرماها</label>
-      <p class="muted">برای هر برند می‌توانید لوگو را آپلود کنید یا آدرس تصویر را وارد کنید.</p>
-      <p style="margin-top:12px"><a class="btn btn--sm" href="clients.php">برندها و لوگوها</a></p>
+      <label>۲. برندها و صفحه اختصاصی</label>
+      <p class="muted">لوگو، معرفی، کاور و صفحه مستقل هر کارفرما را بسازید؛ سپس کارهایش را در گالری جداگانه بگذارید.</p>
+      <p style="margin-top:12px"><a class="btn btn--sm" href="clients.php">برندها و لوگوها</a> <a class="btn btn--ghost btn--sm" href="gallery.php">گالری برندها</a></p>
     </div>
     <div class="f">
       <label>۳. فونت، رنگ و CSS</label>

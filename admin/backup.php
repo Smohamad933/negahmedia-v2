@@ -115,7 +115,7 @@ $dbSize  = db_driver() === 'sqlite' && is_file($dbPath) ? filesize($dbPath) : nu
 $uploads = 0;
 $upBytes = 0;
 
-foreach (['logos', 'projects'] as $sub) {
+foreach (['logos', 'projects', 'clients', 'gallery'] as $sub) {
     $dir = upload_path($sub);
     if (is_dir($dir)) {
         foreach (glob($dir . '/*') ?: [] as $file) {

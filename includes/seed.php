@@ -51,7 +51,7 @@ function seed_settings(): array
         'footer_text' => '© نگاه مدیا — تمام حقوق محفوظ است.',
 
         /* ---------- ظاهر ---------- */
-        'accent'              => '#A8752E',
+        'accent'              => '#0A9F83',
         'anim_level'          => 'full',
         'font_family'         => 'Vazirmatn',
         'font_heading_family' => 'Vazirmatn',
@@ -60,7 +60,7 @@ function seed_settings(): array
         'font_external_url'   => '',
         'custom_css'          => '',
         'style_version'       => '1',
-        'db_version'          => '3',
+        'db_version'          => '4',
     ];
 }
 

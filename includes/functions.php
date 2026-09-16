@@ -204,6 +204,13 @@ function media_url(array $row, string $fileKey = 'logo_file', string $urlKey = '
     return null;
 }
 
+/** لینک صفحه اختصاصی هر برند — مستقل از وب‌سایت خارجی برند */
+function brand_url(array $client): string
+{
+    $id = (int) ($client['id'] ?? 0);
+    return url('brand.php?id=' . $id);
+}
+
 /** آدرس فایل فونت آپلودی */
 function font_url(?string $relative): ?string
 {

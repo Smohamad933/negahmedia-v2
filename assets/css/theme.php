@@ -51,9 +51,9 @@ if ($headingFontFile !== '' && $headingFontFile !== $bodyFontFile) {
 }
 
 /* ═══════════════ ۳. رنگ تأکیدی ═══════════════ */
-$accent = trim(setting('accent', '#A8752E'));
+$accent = trim(setting('accent', '#0A9F83'));
 if (!is_hex_color($accent)) {
-    $accent = '#A8752E';
+    $accent = '#0A9F83';
 }
 
 $accentDark  = hex_darken($accent, 0.18);

@@ -24,6 +24,7 @@ function admin_menu(): array
         'settings.php'   => ['متن‌ها و تماس', 'محتوا'],
         'appearance.php' => ['ظاهر، فونت و CSS', 'ظاهر'],
         'clients.php'    => ['برندها و لوگوها', 'محتوا'],
+        'gallery.php'    => ['گالری برندها', 'محتوا'],
         'content.php'    => ['خدمات، آمار و مراحل', 'محتوا'],
         'projects.php'   => ['نمونه‌کارها', 'محتوا'],
         'messages.php'   => ['پیام‌های دریافتی', 'ارتباط'],

@@ -9,8 +9,12 @@ data/*.db
 # ساختار پوشه‌ها حفظ می‌شود، اما محتوای آپلودی در گیت ثبت نمی‌شود.
 uploads/logos/*
 uploads/projects/*
+uploads/clients/*
+uploads/gallery/*
 !uploads/logos/.gitkeep
 !uploads/projects/.gitkeep
+!uploads/clients/.gitkeep
+!uploads/gallery/.gitkeep
 
 # ---------- سیستم ----------
 .DS_Store
