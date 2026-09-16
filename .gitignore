@@ -1,0 +1,19 @@
+# ---------- دیتابیس محلی ----------
+data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
+data/*.sql
+data/*.db
+
+# ---------- فایل‌های آپلودی کاربران ----------
+# ساختار پوشه‌ها حفظ می‌شود، اما محتوای آپلودی در گیت ثبت نمی‌شود.
+uploads/logos/*
+uploads/projects/*
+!uploads/logos/.gitkeep
+!uploads/projects/.gitkeep
+
+# ---------- سیستم ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log

@@ -1,0 +1,44 @@
+# نگاه مدیا | تنظیمات سرور آپاچی
+AddDefaultCharset UTF-8
+Options -Indexes
+DirectoryIndex index.php index.html
+
+# ---------- فشرده‌سازی ----------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml font/woff2
+</IfModule>
+
+# ---------- کش مرورگر ----------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css                "access plus 7 days"
+  ExpiresByType application/javascript  "access plus 7 days"
+  ExpiresByType font/woff2              "access plus 1 year"
+  ExpiresByType image/png               "access plus 1 month"
+  ExpiresByType image/jpeg              "access plus 1 month"
+  ExpiresByType image/svg+xml           "access plus 1 month"
+  ExpiresByType image/webp              "access plus 1 month"
+</IfModule>
+
+# ---------- هدرهای امنیتی ----------
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ---------- محافظت از فایل‌های حساس ----------
+<FilesMatch "\.(sqlite|sqlite3|sql|db|ini|log|md)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# ---------- صفحه خطای سفارشی (اختیاری) ----------
+# ErrorDocument 404 /index.php
