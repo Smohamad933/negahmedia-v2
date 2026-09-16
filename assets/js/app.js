@@ -163,41 +163,6 @@
     }
   }
 
-  /* ═══════════════════════════════════════════════
-     ۵. منوی موبایل
-     ═══════════════════════════════════════════════ */
-  var burger = document.querySelector('[data-menu]');
-  var panel  = document.querySelector('[data-menu-panel]');
-
-  if (burger && panel) {
-    burger.addEventListener('click', function () {
-      var open = burger.getAttribute('aria-expanded') === 'true';
-      burger.setAttribute('aria-expanded', open ? 'false' : 'true');
-      if (open) {
-        panel.setAttribute('hidden', '');
-      } else {
-        panel.removeAttribute('hidden');
-      }
-    });
-
-    panel.addEventListener('click', function (e) {
-      if (e.target.tagName === 'A') {
-        panel.setAttribute('hidden', '');
-        burger.setAttribute('aria-expanded', 'false');
-      }
-    });
-
-    window.addEventListener('resize', function () {
-      if (window.innerWidth > 1080 && !panel.hasAttribute('hidden')) {
-        panel.setAttribute('hidden', '');
-        burger.setAttribute('aria-expanded', 'false');
-      }
-    });
-  }
-
-  /* ═══════════════════════════════════════════════
-     ۶. بازگشت به بالا
-     ═══════════════════════════════════════════════ */
   if (top) {
     top.addEventListener('click', function () {
       window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });

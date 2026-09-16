@@ -1,27 +1,44 @@
 <?php
 /**
  * نگاه مدیا | پاصفحه سایت
+ * بدون منو — فقط برند، اطلاعات تماس و شبکه‌های اجتماعی.
  */
 $siteShort = setting('site_short', 'نگاه مدیا');
 $phone = setting('phone');
 $email = setting('email');
-$socials = [
+$socials = array_filter([
     'اینستاگرام' => setting('instagram'),
     'تلگرام'     => setting('telegram'),
     'لینکدین'    => setting('linkedin'),
-];
-$socials = array_filter($socials);
+]);
 ?>
 <footer class="foot">
   <div class="wrap">
+
     <div class="foot__top">
-      <div class="foot__claim">
-        <p class="label">NEGAH MEDIA</p>
+      <!-- ────── برند ────── -->
+      <div class="foot__brand">
+        <a class="foot__logo" href="<?= e(url()) ?>" aria-label="<?= e($siteShort) ?>">
+          <span class="foot__mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" role="img" aria-hidden="true" focusable="false">
+              <rect width="40" height="40" fill="#F0EBE3"/>
+              <text x="20" y="28" text-anchor="middle" font-size="22" font-weight="700"
+                    font-family="Vazirmatn, Tahoma, sans-serif" fill="#0C0A09">ن</text>
+              <rect x="0" y="36" width="40" height="4" fill="#A8752E" class="foot__mark-bar"/>
+            </svg>
+          </span>
+          <span class="foot__brand-txt">
+            <strong><?= e($siteShort) ?></strong>
+            <small>NEGAH&nbsp;MEDIA</small>
+          </span>
+        </a>
+
         <p class="foot__quote"><?= e(setting('footer_note', setting('hero_tagline'))) ?></p>
       </div>
 
+      <!-- ────── تماس ────── -->
       <div class="foot__col">
-        <p class="label">CONTACT</p>
+        <p class="label">تماس</p>
         <?php if ($phone !== ''): ?>
           <p><a href="tel:<?= e($phone) ?>" dir="ltr"><?= e(fa_digits($phone)) ?></a></p>
         <?php endif; ?>
@@ -33,8 +50,9 @@ $socials = array_filter($socials);
         <?php endif; ?>
       </div>
 
+      <!-- ────── شبکه‌های اجتماعی ────── -->
       <div class="foot__col">
-        <p class="label">SOCIAL</p>
+        <p class="label">شبکه‌های اجتماعی</p>
         <?php if ($socials): ?>
           <?php foreach ($socials as $label => $href): ?>
             <p><a href="<?= e($href) ?>" target="_blank" rel="noopener noreferrer"><?= e($label) ?></a></p>
@@ -42,14 +60,6 @@ $socials = array_filter($socials);
         <?php else: ?>
           <p class="foot__mut">—</p>
         <?php endif; ?>
-      </div>
-
-      <div class="foot__col">
-        <p class="label">MENU</p>
-        <p><a href="#clients">همراهان</a></p>
-        <p><a href="#services">خدمات</a></p>
-        <p><a href="#process">مراحل همکاری</a></p>
-        <p><a href="#contact">شروع یک پروژه</a></p>
       </div>
     </div>
 
@@ -62,6 +72,6 @@ $socials = array_filter($socials);
 
 <button class="totop" type="button" aria-label="بازگشت به بالا" data-top>↑</button>
 
-<script src="<?= e(url('assets/js/app.js?v=3')) ?>" defer></script>
+<script src="<?= e(url('assets/js/app.js?v=' . setting('style_version', '1'))) ?>" defer></script>
 </body>
 </html>

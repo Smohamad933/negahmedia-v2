@@ -244,8 +244,10 @@ admin_head('ظاهر، فونت و CSS');
       </div>
 
       <div class="f">
-        <label for="call_label">برچسب کنار شماره تماس در هدر</label>
+        <label for="call_label">برچسب بالای شماره تماس در هدر</label>
         <input id="call_label" name="call_label" value="<?= e(setting('call_label', 'تماس مستقیم')) ?>">
+        <p class="hint">خالی بگذارید تا فقط شماره نمایش داده شود. سایت منو ندارد؛ هدر فقط شامل
+        لوگوتایپ برند و همین بلوک شماره تماس است.</p>
       </div>
 
       <div class="f">
