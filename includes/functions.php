@@ -4,7 +4,8 @@
  */
 declare(strict_types=1);
 
-if (session_status() === PHP_SESSION_NONE) {
+/* سشن برای درخواست‌های سبک (مثل CSS پویا) آغاز نمی‌شود */
+if (!defined('NO_SESSION') && session_status() === PHP_SESSION_NONE) {
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
     session_set_cookie_params([
         'httponly' => true,
@@ -14,8 +15,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/schema.php';
+
 /* =========================================================
-   خروجی ایمن
+   خروجی ایمن و آدرس‌ها
    ========================================================= */
 
 function e($value): string
@@ -36,14 +39,21 @@ function url(string $path = ''): string
     return $base . ltrim($path, '/');
 }
 
+/** مسیر واقعی پوشه آپلود */
+function upload_path(string $relative = ''): string
+{
+    $root = dirname(__DIR__) . '/' . trim((string) cfg('upload_dir', 'uploads/'), '/');
+    return $relative === '' ? $root : $root . '/' . ltrim($relative, '/');
+}
+
 /* =========================================================
    تنظیمات سایت
    ========================================================= */
 
-function settings_all(): array
+function settings_all(bool $reset = false): array
 {
     static $cache = null;
-    if ($cache === null) {
+    if ($cache === null || $reset) {
         $cache = [];
         try {
             foreach (q('SELECT `k`,`v` FROM `settings`') as $row) {
@@ -70,12 +80,31 @@ function setting_save(string $key, string $value): void
             'INSERT INTO `settings` (`k`,`v`) VALUES (?,?) ON DUPLICATE KEY UPDATE `v` = VALUES(`v`)',
             [$key, $value]
         );
-        return;
+    } else {
+        db_run(
+            'INSERT INTO `settings` (`k`,`v`) VALUES (?,?) ON CONFLICT(`k`) DO UPDATE SET `v` = excluded.`v`',
+            [$key, $value]
+        );
     }
-    db_run(
-        'INSERT INTO `settings` (`k`,`v`) VALUES (?,?) ON CONFLICT(`k`) DO UPDATE SET `v` = excluded.`v`',
-        [$key, $value]
-    );
+    settings_all(true);
+}
+
+/**
+ * ثبت تنظیم فقط اگر مقدار فعلی خالی باشد.
+ * برای افزودن تنظیمات جدید در نسخه‌های بعدی بدون بازنویسی تغییرات کاربر.
+ */
+function setting_ensure(string $key, string $value): void
+{
+    $all = settings_all();
+    if (!array_key_exists($key, $all) || $all[$key] === '') {
+        setting_save($key, $value);
+    }
+}
+
+/** افزایش شمارنده نسخه ظاهر (برای تازه‌سازی کش CSS) */
+function style_bump(): void
+{
+    setting_save('style_version', (string) (time()));
 }
 
 /* =========================================================
@@ -175,19 +204,35 @@ function media_url(array $row, string $fileKey = 'logo_file', string $urlKey = '
     return null;
 }
 
-/** ارتفاع کادر نمایش لوگو دقیقاً یکسان -> سایز ثابت */
-function upload_path(string $relative = ''): string
+/** آدرس فایل فونت آپلودی */
+function font_url(?string $relative): ?string
 {
-    $root = dirname(__DIR__) . '/' . trim((string) cfg('upload_dir', 'uploads/'), '/');
-    return $relative === '' ? $root : $root . '/' . ltrim($relative, '/');
+    $relative = trim((string) $relative);
+    if ($relative === '') {
+        return null;
+    }
+    return url((string) cfg('upload_dir', 'uploads/') . ltrim($relative, '/'));
+}
+
+/** قالب فونت بر اساس پسوند فایل */
+function font_format(string $filename): string
+{
+    return match (strtolower(pathinfo($filename, PATHINFO_EXTENSION))) {
+        'woff2' => 'woff2',
+        'woff'  => 'woff',
+        'otf'   => 'opentype',
+        'ttf'   => 'truetype',
+        default => 'woff2',
+    };
 }
 
 /** نام امن و یکتا برای فایل آپلودی */
-function safe_filename(string $original): string
+function safe_filename(string $original, ?array $allowed = null): string
 {
+    $allowed = $allowed ?? ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
     $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
-    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'], true)) {
-        $ext = 'png';
+    if (!in_array($ext, $allowed, true)) {
+        $ext = $allowed[0];
     }
     return date('Ymd-His') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
 }
@@ -204,8 +249,7 @@ function upload_image(string $field, string $subdir, int $maxMb = 2): array
         return $out;
     }
 
-    $err = (int) $_FILES[$field]['error'];
-    if ($err !== UPLOAD_ERR_OK) {
+    if ((int) $_FILES[$field]['error'] !== UPLOAD_ERR_OK) {
         $out['error'] = 'آپلود فایل انجام نشد. دوباره تلاش کنید.';
         return $out;
     }
@@ -225,7 +269,6 @@ function upload_image(string $field, string $subdir, int $maxMb = 2): array
         return $out;
     }
 
-    // بررسی واقعی بودن تصویر (SVG از این بررسی معاف است)
     if ($ext === 'svg') {
         $head = (string) @file_get_contents($tmp, false, null, 0, 512);
         if (stripos($head, '<svg') === false) {
@@ -254,6 +297,71 @@ function upload_image(string $field, string $subdir, int $maxMb = 2): array
     return $out;
 }
 
+/**
+ * آپلود فایل فونت.
+ * @return array{ok:bool,file:?string,error:?string}
+ */
+function upload_font(string $field, int $maxMb = 6): array
+{
+    $out = ['ok' => false, 'file' => null, 'error' => null];
+
+    if (empty($_FILES[$field]['name']) || (int) ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $out;
+    }
+
+    if ((int) $_FILES[$field]['error'] !== UPLOAD_ERR_OK) {
+        $out['error'] = 'آپلود فونت انجام نشد. دوباره تلاش کنید.';
+        return $out;
+    }
+
+    $tmp  = (string) $_FILES[$field]['tmp_name'];
+    $size = (int) $_FILES[$field]['size'];
+    $name = (string) $_FILES[$field]['name'];
+    $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+
+    if ($size > $maxMb * 1024 * 1024) {
+        $out['error'] = 'حجم فایل فونت باید کمتر از ' . fa_digits((string) $maxMb) . ' مگابایت باشد.';
+        return $out;
+    }
+
+    if (!in_array($ext, ['woff2', 'woff', 'ttf', 'otf'], true)) {
+        $out['error'] = 'فرمت مجاز فونت: WOFF2، WOFF، TTF یا OTF.';
+        return $out;
+    }
+
+    // بررسی امضای فایل فونت
+    $sig = (string) @file_get_contents($tmp, false, null, 0, 4);
+    $signatures = [
+        'woff2' => "wOF2",
+        'woff'  => "wOFF",
+        'ttf'   => "\x00\x01\x00\x00",
+        'otf'   => 'OTTO',
+    ];
+    if (isset($signatures[$ext]) && $sig !== $signatures[$ext]) {
+        // برخی OTF/TTFهای فشرده امضای متفاوتی دارند؛ فقط هشدار می‌دهیم
+        if (!in_array($ext, ['ttf', 'otf'], true)) {
+            $out['error'] = 'فایل انتخابی یک فونت معتبر به‌نظر نمی‌رسد.';
+            return $out;
+        }
+    }
+
+    $dir = upload_path('fonts');
+    if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
+        $out['error'] = 'ساخت پوشه fonts ممکن نشد.';
+        return $out;
+    }
+
+    $newName = safe_filename($name, ['woff2', 'woff', 'ttf', 'otf']);
+    if (!@move_uploaded_file($tmp, $dir . '/' . $newName)) {
+        $out['error'] = 'ذخیره فایل فونت ممکن نشد.';
+        return $out;
+    }
+
+    $out['ok']   = true;
+    $out['file'] = 'fonts/' . $newName;
+    return $out;
+}
+
 /** حذف فایل آپلودی (با محدود کردن مسیر به پوشه uploads) */
 function delete_upload(?string $relative): void
 {
@@ -265,4 +373,64 @@ function delete_upload(?string $relative): void
     if (is_file($full)) {
         @unlink($full);
     }
+}
+
+/* =========================================================
+   رنگ
+   ========================================================= */
+
+/** بررسی معتبر بودن رنگ هگز */
+function is_hex_color(string $color): bool
+{
+    return (bool) preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color);
+}
+
+function hex_to_rgb(string $hex): array
+{
+    $hex = ltrim($hex, '#');
+    if (strlen($hex) === 3) {
+        $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+    }
+    return [
+        (int) hexdec(substr($hex, 0, 2)),
+        (int) hexdec(substr($hex, 2, 2)),
+        (int) hexdec(substr($hex, 4, 2)),
+    ];
+}
+
+function rgb_to_hex(array $rgb): string
+{
+    return sprintf('#%02X%02X%02X', max(0, min(255, (int) $rgb[0])), max(0, min(255, (int) $rgb[1])), max(0, min(255, (int) $rgb[2])));
+}
+
+/** تیره‌تر کردن رنگ (factor بین ۰ و ۱) */
+function hex_darken(string $hex, float $factor = 0.25): string
+{
+    $rgb = hex_to_rgb($hex);
+    return rgb_to_hex(array_map(static fn($c) => (int) round($c * (1 - $factor)), $rgb));
+}
+
+/** روشن‌تر کردن رنگ */
+function hex_lighten(string $hex, float $factor = 0.2): string
+{
+    $rgb = hex_to_rgb($hex);
+    return rgb_to_hex(array_map(static fn($c) => (int) round($c + (255 - $c) * $factor), $rgb));
+}
+
+/** رنگ با شفافیت */
+function hex_rgba(string $hex, float $alpha = 1.0): string
+{
+    [$r, $g, $b] = hex_to_rgb($hex);
+    return sprintf('rgba(%d, %d, %d, %.2F)', $r, $g, $b, $alpha);
+}
+
+/**
+ * پاک‌سازی CSS سفارشی کاربر.
+ * فقط جلوی بسته‌شدن تگ استایل و باز کردن کد PHP را می‌گیرد؛
+ * بقیه CSS دست‌نخورده می‌ماند چون فقط مدیر به آن دسترسی دارد.
+ */
+function sanitize_custom_css(string $css): string
+{
+    $css = str_replace(['</style', '</STYLE', '<?', '?>', '<script'], '', $css);
+    return trim($css);
 }

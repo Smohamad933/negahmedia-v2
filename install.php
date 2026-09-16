@@ -9,7 +9,7 @@ require_once __DIR__ . '/includes/config.php';
 $cfgFile = __DIR__ . '/includes/config.php';
 
 /* --------- افزودن پوشه‌های موردنیاز --------- */
-foreach (['data', 'uploads', 'uploads/logos', 'uploads/projects'] as $dir) {
+foreach (['data', 'uploads', 'uploads/logos', 'uploads/projects', 'uploads/fonts'] as $dir) {
     if (!is_dir(__DIR__ . '/' . $dir)) {
         @mkdir(__DIR__ . '/' . $dir, 0755, true);
     }

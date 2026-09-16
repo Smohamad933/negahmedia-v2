@@ -1,8 +1,11 @@
 <?php
 /**
- * نگاه مدیا | ساختار جداول (MySQL و SQLite)
+ * نگاه مدیا | ساختار جداول و به‌روزرسانی ساختار (MySQL و SQLite)
  */
 declare(strict_types=1);
+
+/** نسخه ساختار دیتابیس — با هر تغییر ساختار یک عدد اضافه شود */
+const NEGAH_DB_VERSION = 3;
 
 /** @return string[] فهرست دستورات CREATE TABLE */
 function schema_statements(): array
@@ -71,10 +74,12 @@ function schema_statements(): array
                 `logo_file` VARCHAR(255) DEFAULT NULL,
                 `logo_url` VARCHAR(600) DEFAULT NULL,
                 `website` VARCHAR(400) DEFAULT NULL,
+                `featured` TINYINT(1) NOT NULL DEFAULT 0,
                 `sort_order` INT NOT NULL DEFAULT 0,
                 `visible` TINYINT(1) NOT NULL DEFAULT 1,
                 PRIMARY KEY (`id`),
-                KEY `idx_group` (`group_id`)
+                KEY `idx_group` (`group_id`),
+                KEY `idx_featured` (`featured`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
             "CREATE TABLE IF NOT EXISTS `projects` (
@@ -160,6 +165,7 @@ function schema_statements(): array
             `logo_file` TEXT DEFAULT NULL,
             `logo_url` TEXT DEFAULT NULL,
             `website` TEXT DEFAULT NULL,
+            `featured` INTEGER NOT NULL DEFAULT 0,
             `sort_order` INTEGER NOT NULL DEFAULT 0,
             `visible` INTEGER NOT NULL DEFAULT 1
         )",
@@ -194,15 +200,87 @@ function schema_create(): void
     foreach (schema_statements() as $sql) {
         db()->exec($sql);
     }
+    schema_indexes();
+}
+
+function schema_indexes(): void
+{
     $indexes = [
         "CREATE INDEX IF NOT EXISTS `idx_clients_group` ON `clients` (`group_id`)",
+        "CREATE INDEX IF NOT EXISTS `idx_clients_featured` ON `clients` (`featured`)",
         "CREATE INDEX IF NOT EXISTS `idx_messages_read` ON `messages` (`is_read`)",
     ];
     foreach ($indexes as $sql) {
         try {
             db()->exec($sql);
         } catch (Throwable $e) {
-            // در MySQL ممکن است IF NOT EXISTS پشتیبانی نشود؛ نادیده بگیر
+            // MySQL نسخه‌های قدیمی IF NOT EXISTS را پشتیبانی نمی‌کنند؛ نادیده بگیر
         }
     }
+}
+
+/** فهرست ستون‌های یک جدول */
+function schema_columns(string $table): array
+{
+    try {
+        if (db_driver() === 'mysql') {
+            return array_map(
+                static fn(array $r) => (string) $r['Field'],
+                q('SHOW COLUMNS FROM `' . $table . '`')
+            );
+        }
+        return array_map(
+            static fn(array $r) => (string) $r['name'],
+            q('PRAGMA table_info(`' . $table . '`)')
+        );
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function schema_has_column(string $table, string $column): bool
+{
+    return in_array($column, schema_columns($table), true);
+}
+
+/**
+ * افزودن ستون‌های جدید به نصب‌های قدیمی.
+ * فقط ستون‌هایی که وجود ندارند اضافه می‌شوند و داده‌ای از دست نمی‌رود.
+ */
+function schema_migrate(): void
+{
+    $additions = [
+        'clients' => [
+            'featured' => db_driver() === 'mysql'
+                ? "ALTER TABLE `clients` ADD COLUMN `featured` TINYINT(1) NOT NULL DEFAULT 0"
+                : "ALTER TABLE `clients` ADD COLUMN `featured` INTEGER NOT NULL DEFAULT 0",
+        ],
+        'process_steps' => [
+            'visible' => db_driver() === 'mysql'
+                ? "ALTER TABLE `process_steps` ADD COLUMN `visible` TINYINT(1) NOT NULL DEFAULT 1"
+                : "ALTER TABLE `process_steps` ADD COLUMN `visible` INTEGER NOT NULL DEFAULT 1",
+        ],
+        'client_groups' => [
+            'visible' => db_driver() === 'mysql'
+                ? "ALTER TABLE `client_groups` ADD COLUMN `visible` TINYINT(1) NOT NULL DEFAULT 1"
+                : "ALTER TABLE `client_groups` ADD COLUMN `visible` INTEGER NOT NULL DEFAULT 1",
+        ],
+    ];
+
+    foreach ($additions as $table => $columns) {
+        if (schema_columns($table) === []) {
+            continue;
+        }
+        foreach ($columns as $column => $sql) {
+            if (!schema_has_column($table, $column)) {
+                try {
+                    db()->exec($sql);
+                } catch (Throwable $e) {
+                    // نادیده بگیر
+                }
+            }
+        }
+    }
+
+    schema_indexes();
 }

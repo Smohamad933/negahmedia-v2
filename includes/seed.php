@@ -1,34 +1,66 @@
 <?php
 /**
  * نگاه مدیا | داده‌های پیش‌فرض سایت
- * این داده‌ها در زمان نصب یک‌بار درج می‌شوند و بعد از آن از پنل مدیریت ویرایش می‌شوند.
+ * این داده‌ها در زمان نصب درج می‌شوند و بعد از آن از پنل مدیریت ویرایش می‌شوند.
  */
 declare(strict_types=1);
 
-/** متن‌ها و اطلاعات تماس پیش‌فرض */
+/** متن‌ها، ظاهر و اطلاعات تماس پیش‌فرض */
 function seed_settings(): array
 {
     return [
-        'site_name'      => 'آژانس خلاق و تبلیغاتی نگاه مدیا',
-        'site_short'     => 'نگاه مدیا',
-        'hero_kicker'    => 'CREATIVE &amp; ADVERTISING AGENCY · AHVAZ',
+        /* ---------- هویت ---------- */
+        'site_name'        => 'آژانس خلاق و تبلیغاتی نگاه مدیا',
+        'site_short'       => 'نگاه مدیا',
+        'meta_description' => 'آژانس خلاق و تبلیغاتی نگاه مدیا؛ هویت بصری، تولید محتوا، کمپین تبلیغاتی و دیجیتال مارکتینگ.',
+
+        /* ---------- هیرو ---------- */
+        'hero_kicker'    => 'CREATIVE &amp; ADVERTISING AGENCY',
         'hero_title'     => 'برندت را قابلِ دیده‌شدن کن.',
         'hero_sub'       => 'از ایده تا اجرا؛ هویت بصری، تولید محتوا، کمپین و دیجیتال مارکتینگ را یکپارچه می‌سازیم تا برند شما فقط دیده نشود، بلکه در ذهن بماند.',
         'hero_tagline'   => 'ایده‌ای که دیده می‌شود، اثری که می‌ماند.',
-        'manifesto'      => 'ما فقط تبلیغ نمی‌کنیم؛ روایت می‌سازیم.',
-        'about_text'     => 'هر پروژه برای ما یک روایت است؛ از لحظه‌ای که مسئله برند را می‌شناسیم تا لحظه‌ای که مخاطب با آن روبه‌رو می‌شود. تیم نگاه مدیا این مسیر را یکپارچه پیش می‌برد تا خروجی، منسجم و ماندگار باشد.',
-        'clients_lead'   => 'از کسب‌وکارهای خصوصی تا نهادهای دولتی و رویدادهای فرهنگی؛ در سه حوزه با ما همراه بوده‌اند.',
-        'phone'          => '09012319879',
-        'email'          => 'negahminfo@gmail.com',
-        'instagram'      => 'https://instagram.com/negahmedia',
-        'telegram'       => 'https://t.me/negahmedia',
-        'linkedin'       => 'https://linkedin.com/company/negahmedia',
-        'address'        => 'خوزستان، اهواز',
-        'footer_note'    => 'ایده‌ای که دیده می‌شود، اثری که می‌ماند.',
-        'footer_text'    => '© نگاه مدیا — تمام حقوق محفوظ است.',
-        'meta_description' => 'آژانس خلاق و تبلیغاتی نگاه مدیا؛ هویت بصری، تولید محتوا، کمپین تبلیغاتی و دیجیتال مارکتینگ در اهواز.',
         'cta_primary'    => 'شروع یک پروژه',
         'cta_secondary'  => 'دیدن نمونه‌کارها',
+
+        /* ---------- درباره و آمار ---------- */
+        'manifesto'      => 'ما فقط تبلیغ نمی‌کنیم؛ روایت می‌سازیم.',
+        'about_text'     => 'هر پروژه برای ما یک روایت است؛ از لحظه‌ای که مسئله برند را می‌شناسیم تا لحظه‌ای که مخاطب با آن روبه‌رو می‌شود. تیم نگاه مدیا این مسیر را یکپارچه پیش می‌برد تا خروجی، منسجم و ماندگار باشد.',
+
+        /* ---------- همراهان ---------- */
+        'clients_lead'      => 'از کسب‌وکارهای خصوصی تا نهادهای دولتی و رویدادهای فرهنگی؛ در سه حوزه با ما همراه بوده‌اند.',
+        'clients_home_mode' => 'featured',
+        'clients_home_count'=> '14',
+        'clients_all_label' => 'دیدن همه همراهان',
+        'clients_page_title'=> 'همراهان نگاه مدیا',
+        'clients_page_lead' => 'فهرست کامل کسب‌وکارها، نهادها و رویدادهایی که در مسیر ساخت برندشان همراهشان بوده‌ایم.',
+
+        /* ---------- نوار بزرگ متحرک ---------- */
+        'band_text' => 'برندینگ، محتوا، کمپین، دیجیتال',
+
+        /* ---------- تماس ---------- */
+        'phone'      => '09012319879',
+        'email'      => 'negahminfo@gmail.com',
+        'address'    => 'خوزستان، اهواز',
+        'instagram'  => 'https://instagram.com/negahmedia',
+        'telegram'   => 'https://t.me/negahmedia',
+        'linkedin'   => 'https://linkedin.com/company/negahmedia',
+        'call_label' => 'تماس مستقیم',
+
+        /* ---------- پاصفحه ---------- */
+        'footer_note' => 'ایده‌ای که دیده می‌شود، اثری که می‌ماند.',
+        'footer_text' => '© نگاه مدیا — تمام حقوق محفوظ است.',
+
+        /* ---------- ظاهر ---------- */
+        'accent'              => '#A8752E',
+        'anim_level'          => 'full',
+        'font_family'         => 'Vazirmatn',
+        'font_heading_family' => 'Vazirmatn',
+        'font_file'           => '',
+        'font_heading_file'   => '',
+        'font_external_url'   => '',
+        'custom_css'          => '',
+        'style_version'       => '1',
+        'db_version'          => '3',
     ];
 }
 
@@ -121,6 +153,20 @@ function seed_clients(): array
 }
 
 /**
+ * افزودن تنظیمات جدید که در نسخه‌های قبلی وجود نداشتند.
+ * مقادیر موجود کاربر بازنویسی نمی‌شوند.
+ */
+function seed_defaults(): void
+{
+    foreach (seed_settings() as $key => $value) {
+        if ($key === 'style_version' || $key === 'db_version') {
+            continue;
+        }
+        setting_ensure((string) $key, (string) $value);
+    }
+}
+
+/**
  * درج داده‌های پیش‌فرض (فقط اگر جدول‌ها خالی باشند).
  */
 function seed_all(bool $force = false): void
@@ -131,6 +177,8 @@ function seed_all(bool $force = false): void
         foreach (seed_settings() as $k => $v) {
             setting_save((string) $k, (string) $v);
         }
+    } else {
+        seed_defaults();
     }
 
     /* --- آمار --- */

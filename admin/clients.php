@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $website = trim((string) ($_POST['website'] ?? ''));
         $order   = (int) ($_POST['sort_order'] ?? 0);
         $visible = isset($_POST['visible']) ? 1 : 0;
+        $featured = isset($_POST['featured']) ? 1 : 0;
 
         if ($name === '') {
             flash('نام مجموعه را وارد کنید.', 'err');
@@ -103,14 +104,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             db_run(
-                'UPDATE `clients` SET `group_id`=?,`name`=?,`logo_file`=?,`logo_url`=?,`website`=?,`sort_order`=?,`visible`=? WHERE `id`=?',
-                [$groupId, $name, $finalFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $order, $visible, $id]
+                'UPDATE `clients` SET `group_id`=?,`name`=?,`logo_file`=?,`logo_url`=?,`website`=?,`featured`=?,`sort_order`=?,`visible`=? WHERE `id`=?',
+                [$groupId, $name, $finalFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $featured, $order, $visible, $id]
             );
             flash('«' . $name . '» به‌روزرسانی شد.');
         } else {
             db_run(
-                'INSERT INTO `clients` (`group_id`,`name`,`logo_file`,`logo_url`,`website`,`sort_order`,`visible`) VALUES (?,?,?,?,?,?,?)',
-                [$groupId, $name, $newFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $order, $visible]
+                'INSERT INTO `clients` (`group_id`,`name`,`logo_file`,`logo_url`,`website`,`featured`,`sort_order`,`visible`) VALUES (?,?,?,?,?,?,?,?)',
+                [$groupId, $name, $newFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $featured, $order, $visible]
             );
             flash('«' . $name . '» اضافه شد.');
         }
@@ -126,6 +127,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             db_run('DELETE FROM `clients` WHERE `id` = ?', [$id]);
             flash('همراه حذف شد.');
         }
+        redirect('clients.php');
+    }
+
+    /* ---------- ویژه / عادی کردن سریع ---------- */
+    if ($act === 'client_feature') {
+        $id  = (int) ($_POST['id'] ?? 0);
+        $row = q1('SELECT `id`,`name`,`featured` FROM `clients` WHERE `id` = ?', [$id]);
+
+        if ($row !== null) {
+            $now = (int) $row['featured'] === 1 ? 0 : 1;
+            db_run('UPDATE `clients` SET `featured` = ? WHERE `id` = ?', [$now, $id]);
+            flash($now === 1 ? '«' . $row['name'] . '» به صفحه اصلی اضافه شد.' : '«' . $row['name'] . '» از صفحه اصلی برداشته شد.');
+        }
+        redirect('clients.php');
+    }
+
+    /* ---------- ویژه کردن همه موارد یک دسته ---------- */
+    if ($act === 'group_feature_all') {
+        $id  = (int) ($_POST['id'] ?? 0);
+        $val = ($_POST['value'] ?? '1') === '1' ? 1 : 0;
+
+        db_run('UPDATE `clients` SET `featured` = ? WHERE `group_id` = ?', [$val, $id]);
+        flash($val === 1 ? 'همه همراهان این دسته به صفحه اصلی اضافه شدند.' : 'همه همراهان این دسته از صفحه اصلی برداشته شدند.');
         redirect('clients.php');
     }
 
@@ -164,8 +188,53 @@ $edit      = isset($_GET['edit']) ? q1('SELECT * FROM `clients` WHERE `id` = ?',
 $editGroup = isset($_GET['edit_group']) ? q1('SELECT * FROM `client_groups` WHERE `id` = ?', [(int) $_GET['edit_group']]) : null;
 $onlyNoLogo = isset($_GET['no_logo']);
 
+$featuredCount = (int) qv('SELECT COUNT(*) FROM `clients` WHERE `featured` = 1', [], 0);
+$homeCount     = (int) setting('clients_home_count', '14');
+$homeMode      = setting('clients_home_mode', 'featured');
+
 admin_head('برندها و لوگوها');
 ?>
+
+<!-- ══════════════ وضعیت نمایش در صفحه اصلی ══════════════ -->
+<div class="panel">
+  <h2>
+    نمایش در صفحه اصلی
+    <span class="sp"></span>
+    <a class="btn btn--ghost btn--sm" href="appearance.php">تنظیمات ظاهر ›</a>
+  </h2>
+
+  <div class="cards" style="margin-bottom:0">
+    <div class="card">
+      <p class="card__lbl">FEATURED</p>
+      <p class="card__val"><?= e(fa_digits((string) $featuredCount)) ?></p>
+      <p class="card__sub">مورد «ویژه» انتخاب‌شده</p>
+    </div>
+    <div class="card">
+      <p class="card__lbl">HOME LIMIT</p>
+      <p class="card__val"><?= e(fa_digits((string) $homeCount)) ?></p>
+      <p class="card__sub">حداکثر نمایش در صفحه اصلی</p>
+    </div>
+    <div class="card">
+      <p class="card__lbl">MODE</p>
+      <p class="card__val" style="font-size:20px;line-height:1.7">
+        <?= $homeMode === 'featured' ? 'انتخاب دستی' : 'اولین موارد فهرست' ?>
+      </p>
+      <p class="card__sub"><a href="appearance.php">تغییر حالت ›</a></p>
+    </div>
+    <div class="card">
+      <p class="card__lbl">FULL PAGE</p>
+      <p class="card__val" style="font-size:20px;line-height:1.7">صفحه همراهان</p>
+      <p class="card__sub"><a href="<?= e(url('clients.php')) ?>" target="_blank" rel="noopener">مشاهده ↗</a></p>
+    </div>
+  </div>
+
+  <?php if ($homeMode === 'featured' && $featuredCount === 0): ?>
+    <p class="hint" style="margin-top:16px">
+      هنوز هیچ برندی «ویژه» نشده است؛ بنابراین در صفحه اصلی، اولین موارد هر دسته نمایش داده می‌شود.
+      با دکمه ★ کنار هر برند، آن را به صفحه اصلی اضافه کنید.
+    </p>
+  <?php endif; ?>
+</div>
 
 <!-- ══════════════ افزودن / ویرایش همراه ══════════════ -->
 <div class="panel" id="form">
@@ -232,11 +301,16 @@ admin_head('برندها و لوگوها');
         <p class="hint">عدد کمتر = بالاتر.</p>
       </div>
       <div class="f">
-        <label>وضعیت</label>
+        <label>وضعیت‌ها</label>
         <label class="inline">
           <input type="checkbox" name="visible" value="1" <?= !isset($edit['visible']) || (int) $edit['visible'] === 1 ? 'checked' : '' ?>>
           نمایش در سایت
         </label>
+        <label class="inline" style="margin-top:8px">
+          <input type="checkbox" name="featured" value="1" <?= isset($edit['featured']) && (int) $edit['featured'] === 1 ? 'checked' : '' ?>>
+          نمایش در صفحه اصلی (ویژه)
+        </label>
+        <p class="hint">موارد ویژه در بخش «برندها و همراهان» صفحه اصلی دیده می‌شوند؛ بقیه در صفحه «همه همراهان».</p>
       </div>
     </div>
 
@@ -297,6 +371,23 @@ admin_head('برندها و لوگوها');
       <span class="tag"><?= e(fa_digits((string) count($list))) ?> همراه</span>
       <?php if ((int) $g['visible'] !== 1): ?><span class="tag">پنهان</span><?php endif; ?>
       <span class="sp"></span>
+
+      <form method="post">
+        <?= csrf_field() ?>
+        <input type="hidden" name="act" value="group_feature_all">
+        <input type="hidden" name="id" value="<?= (int) $g['id'] ?>">
+        <input type="hidden" name="value" value="1">
+        <button class="btn btn--ghost btn--sm" type="submit" title="همه موارد این دسته در صفحه اصلی نمایش داده شوند">★ همه ویژه</button>
+      </form>
+
+      <form method="post">
+        <?= csrf_field() ?>
+        <input type="hidden" name="act" value="group_feature_all">
+        <input type="hidden" name="id" value="<?= (int) $g['id'] ?>">
+        <input type="hidden" name="value" value="0">
+        <button class="btn btn--ghost btn--sm" type="submit" title="برداشتن همه موارد این دسته از صفحه اصلی">☆ هیچ‌کدام</button>
+      </form>
+
       <a class="btn btn--ghost btn--sm" href="clients.php?edit_group=<?= (int) $g['id'] ?>#form">ویرایش دسته</a>
       <form method="post" data-confirm="این دسته و همه همراهان و لوگوهای آن حذف شوند؟">
         <?= csrf_field() ?>
@@ -321,7 +412,10 @@ admin_head('برندها و لوگوها');
               <?php endif; ?>
             </div>
 
-            <div class="logo-card__name"><?= e($c['name']) ?></div>
+            <div class="logo-card__name">
+              <?php if ((int) $c['featured'] === 1): ?><span class="tag tag--new" title="در صفحه اصلی نمایش داده می‌شود">★ ویژه</span> <?php endif; ?>
+              <?= e($c['name']) ?>
+            </div>
 
             <div class="logo-card__meta">
               <?= $src ? ($c['logo_file'] !== null && $c['logo_file'] !== '' ? 'فایل آپلودی' : 'لینک تصویر') : '—' ?>
@@ -330,6 +424,16 @@ admin_head('برندها و لوگوها');
             </div>
 
             <div class="logo-card__act">
+              <form method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="act" value="client_feature">
+                <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                <button class="btn <?= (int) $c['featured'] === 1 ? '' : 'btn--ghost' ?> btn--sm" type="submit"
+                        title="<?= (int) $c['featured'] === 1 ? 'برداشتن از صفحه اصلی' : 'افزودن به صفحه اصلی' ?>">
+                  <?= (int) $c['featured'] === 1 ? '★' : '☆' ?>
+                </button>
+              </form>
+
               <a class="btn btn--ghost btn--sm" href="clients.php?edit=<?= (int) $c['id'] ?>#form">ویرایش</a>
 
               <form method="post">

@@ -6,9 +6,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/bootstrap.php';
 
-/* =========================================================
+/* ═════════════════════════════════════════════════════════
    فرم تماس
-   ========================================================= */
+   ═════════════════════════════════════════════════════════ */
 $formErrors = [];
 $formSent   = false;
 $old        = ['name' => '', 'phone' => '', 'email' => '', 'subject' => '', 'body' => ''];
@@ -55,9 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form'] ?? '') === 'contact
     }
 }
 
-/* =========================================================
+/* ═════════════════════════════════════════════════════════
    واکشی داده‌ها
-   ========================================================= */
+   ═════════════════════════════════════════════════════════ */
 $groups   = q('SELECT * FROM `client_groups` WHERE `visible` = 1 ORDER BY `sort_order`, `id`');
 $clients  = q('SELECT * FROM `clients` WHERE `visible` = 1 ORDER BY `sort_order`, `id`');
 $services = q('SELECT * FROM `services` WHERE `visible` = 1 ORDER BY `sort_order`, `id`');
@@ -70,7 +70,48 @@ foreach ($clients as $c) {
     $byGroup[(int) $c['group_id']][] = $c;
 }
 
-$hasProjects = $projects !== [];
+/* ---------- انتخاب برندهای صفحه اصلی ---------- */
+$homeMode  = setting('clients_home_mode', 'featured');
+$homeCount = (int) setting('clients_home_count', '14');
+
+if ($homeMode === 'featured') {
+    $featured = array_values(array_filter($clients, static fn(array $c) => (int) $c['featured'] === 1));
+    if ($featured === []) {
+        $featured = $clients;   // اگر موردی ویژه نشده باشد، همه نمایش داده می‌شوند
+    }
+    $usingFallback = $featured === $clients && $clients !== [];
+} else {
+    $featured = $clients;
+    $usingFallback = false;
+}
+
+$featured = $homeCount > 0 ? array_slice($featured, 0, $homeCount) : [];
+
+/* تکرار برای پر شدن عرض نوار متحرک */
+$stripBase = $featured;
+if ($stripBase !== []) {
+    $repeat = 1;
+    while (count($stripBase) * $repeat < 9 && $repeat < 6) {
+        $repeat++;
+    }
+    $padded = [];
+    for ($i = 0; $i < $repeat; $i++) {
+        foreach ($featured as $item) {
+            $padded[] = $item;
+        }
+    }
+    $stripBase = array_merge($padded, $padded);   // دو نیمه یکسان برای حلقه بی‌وقفه
+}
+
+$totalClients   = count($clients);
+$hasProjects    = $projects !== [];
+$hasClientsSec  = $featured !== [] && $homeCount > 0;
+$bandText       = trim(setting('band_text'));
+
+/* کلمات تیتر هیرو برای انیمیشن ورود */
+$heroTitle = setting('hero_title');
+$heroWords = array_values(array_filter(preg_split('/\s+/u', $heroTitle) ?: []));
+
 $phone = setting('phone');
 $email = setting('email');
 
@@ -79,15 +120,28 @@ require __DIR__ . '/includes/header.php';
 
 <main id="main">
 
-  <!-- ══════════════ HERO ══════════════ -->
+  <!-- ══════════════════ HERO ══════════════════ -->
   <section class="hero">
     <div class="wrap hero__grid">
       <div class="hero__main">
-        <p class="kicker reveal"><?= setting('hero_kicker') ?></p>
-        <h1 class="hero__title reveal"><?= e(setting('hero_title')) ?></h1>
-        <p class="hero__sub reveal"><?= e(setting('hero_sub')) ?></p>
-        <div class="hero__cta reveal">
-          <a class="btn" href="#contact"><?= e(setting('cta_primary', 'شروع یک پروژه')) ?></a>
+        <p class="kicker" data-anim="up" style="--d:0"><?= setting('hero_kicker') ?></p>
+
+        <h1 class="hero__title" aria-label="<?= e($heroTitle) ?>">
+          <?php foreach ($heroWords as $i => $w): ?>
+            <span class="w" aria-hidden="true" style="--i:<?= (int) $i ?>"><i><?= e($w) ?></i></span>
+          <?php endforeach; ?>
+        </h1>
+
+        <p class="hero__sub" data-anim="up" style="--d:3"><?= e(setting('hero_sub')) ?></p>
+
+        <div class="hero__cta" data-anim="up" style="--d:4">
+          <a class="btn btn--arrow" href="#contact">
+            <span><?= e(setting('cta_primary', 'شروع یک پروژه')) ?></span>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 12H5M11 18l-6-6 6-6"/>
+            </svg>
+          </a>
           <?php if ($hasProjects): ?>
             <a class="btn btn--ghost" href="#projects"><?= e(setting('cta_secondary', 'دیدن نمونه‌کارها')) ?></a>
           <?php else: ?>
@@ -96,7 +150,7 @@ require __DIR__ . '/includes/header.php';
         </div>
       </div>
 
-      <aside class="hero__side reveal">
+      <aside class="hero__side" data-anim="right" style="--d:2">
         <div class="hero__tag">
           <span class="hero__tagline"><?= e(setting('hero_tagline')) ?></span>
         </div>
@@ -120,7 +174,7 @@ require __DIR__ . '/includes/header.php';
     </div>
   </section>
 
-  <!-- ══════════════ TICKER ══════════════ -->
+  <!-- ══════════════════ نوار چرخان کوچک ══════════════════ -->
   <div class="ticker" aria-hidden="true">
     <div class="ticker__track">
       <?php
@@ -133,85 +187,116 @@ require __DIR__ . '/includes/header.php';
     </div>
   </div>
 
-  <!-- ══════════════ CLIENTS ══════════════ -->
-  <section class="sec" id="clients">
+  <!-- ══════════════════ همراهان (نمونه ویژه) ══════════════════ -->
+  <?php if ($hasClientsSec): ?>
+  <section class="sec sec--clients" id="clients">
     <div class="wrap">
-      <header class="head">
-        <p class="label reveal">CLIENTS &amp; PARTNERS</p>
-        <h2 class="head__title reveal">برندها و همراهان</h2>
-        <p class="head__lead reveal"><?= e(setting('clients_lead')) ?></p>
+      <header class="head head--row">
+        <div>
+          <p class="label" data-anim="up">CLIENTS &amp; PARTNERS</p>
+          <h2 class="head__title" data-anim="up" style="--d:1">برندها و همراهان</h2>
+          <p class="head__lead" data-anim="up" style="--d:2"><?= e(setting('clients_lead')) ?></p>
+        </div>
+        <div class="head__aside" data-anim="up" style="--d:3">
+          <span class="head__count"><?= e(fa_digits((string) $totalClients)) ?> <small>همراه</small></span>
+        </div>
       </header>
+    </div>
 
-      <?php foreach ($groups as $gi => $group): ?>
-        <?php $list = $byGroup[(int) $group['id']] ?? []; ?>
-        <?php if (!$list) { continue; } ?>
-        <section class="cgroup reveal">
-          <div class="cgroup__head">
-            <span class="cgroup__idx"><?= e(fa_num($gi + 1)) ?></span>
-            <h3 class="cgroup__title"><?= e($group['title']) ?></h3>
-            <?php if (!empty($group['subtitle'])): ?>
-              <span class="cgroup__sub"><?= e($group['subtitle']) ?></span>
+    <div class="logo-strip" data-anim="fade">
+      <div class="logo-strip__track">
+        <?php foreach ($stripBase as $c): ?>
+          <?php $logo = media_url($c); ?>
+          <div class="logo-strip__cell<?= $logo ? ' has-logo' : '' ?>">
+            <?php $open = !empty($c['website']); ?>
+            <?php if ($open): ?>
+              <a href="<?= e($c['website']) ?>" target="_blank" rel="noopener noreferrer" title="<?= e($c['name']) ?>">
             <?php endif; ?>
-            <span class="cgroup__count"><?= e(fa_digits((string) count($list))) ?> همراه</span>
+            <?php if ($logo): ?>
+              <img src="<?= e($logo) ?>" alt="<?= e($c['name']) ?>" loading="lazy" decoding="async">
+            <?php else: ?>
+              <span class="logo-strip__name"><?= e($c['name']) ?></span>
+            <?php endif; ?>
+            <?php if ($open): ?></a><?php endif; ?>
           </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
 
-          <ul class="wall">
-            <?php foreach ($list as $client): ?>
-              <?php $logo = media_url($client); ?>
-              <li class="wall__cell<?= $logo ? ' has-logo' : '' ?>">
-                <?php $open = !empty($client['website']); ?>
-                <?php if ($open): ?>
-                  <a href="<?= e($client['website']) ?>" target="_blank" rel="noopener noreferrer" title="<?= e($client['name']) ?>">
-                <?php endif; ?>
-
-                <?php if ($logo): ?>
-                  <img src="<?= e($logo) ?>" alt="<?= e($client['name']) ?>" loading="lazy" decoding="async">
-                <?php else: ?>
-                  <span class="wall__name"><?= e($client['name']) ?></span>
-                <?php endif; ?>
-
-                <?php if ($open): ?></a><?php endif; ?>
-              </li>
-            <?php endforeach; ?>
-          </ul>
-        </section>
-      <?php endforeach; ?>
+    <div class="wrap">
+      <div class="clients-cta" data-anim="up">
+        <a class="btn btn--ghost btn--arrow" href="<?= e(url('clients.php')) ?>">
+          <span><?= e(setting('clients_all_label', 'دیدن همه همراهان')) ?></span>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 12H5M11 18l-6-6 6-6"/>
+          </svg>
+        </a>
+        <span class="clients-cta__hint">
+          <?= e(fa_digits((string) count($featured))) ?> مورد در این صفحه ·
+          فهرست کامل در صفحه همراهان
+        </span>
+      </div>
     </div>
   </section>
+  <?php endif; ?>
 
-  <!-- ══════════════ SERVICES ══════════════ -->
+  <!-- ══════════════════ نوار بزرگ متحرک ══════════════════ -->
+  <?php if ($bandText !== ''): ?>
+  <div class="band" aria-hidden="true">
+    <?php
+    $bandItems = array_values(array_filter(array_map('trim', explode('|', $bandText))));
+    if ($bandItems === []) {
+        $bandItems = [$bandText];
+    }
+    ?>
+    <div class="band__row band__row--a">
+      <?php for ($r = 0; $r < 3; $r++): foreach ($bandItems as $bi): ?>
+        <span><?= e($bi) ?></span><b>◆</b>
+      <?php endforeach; endfor; ?>
+    </div>
+    <div class="band__row band__row--b">
+      <?php for ($r = 0; $r < 3; $r++): foreach ($bandItems as $bi): ?>
+        <span class="outline"><?= e($bi) ?></span><b>◆</b>
+      <?php endforeach; endfor; ?>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <!-- ══════════════════ خدمات ══════════════════ -->
   <section class="sec sec--tint" id="services">
     <div class="wrap">
       <header class="head">
-        <p class="label reveal">SERVICES</p>
-        <h2 class="head__title reveal">خدمات</h2>
+        <p class="label" data-anim="up">SERVICES</p>
+        <h2 class="head__title" data-anim="up" style="--d:1">خدمات</h2>
       </header>
 
       <ol class="srv">
         <?php foreach ($services as $i => $s): ?>
-          <li class="srv__row reveal">
+          <li class="srv__row" data-anim="up" style="--d:<?= min(6, $i) ?>">
             <span class="srv__num"><?= e(fa_num($i + 1)) ?></span>
             <h3 class="srv__title"><?= e($s['title']) ?></h3>
             <p class="srv__desc"><?= e($s['description']) ?></p>
+            <span class="srv__rule" aria-hidden="true"></span>
           </li>
         <?php endforeach; ?>
       </ol>
     </div>
   </section>
 
-  <!-- ══════════════ ABOUT + STATS ══════════════ -->
+  <!-- ══════════════════ درباره + آمار ══════════════════ -->
   <section class="sec" id="about">
     <div class="wrap about">
       <div class="about__txt">
-        <p class="label reveal">ABOUT NEGAH</p>
-        <p class="about__manifesto reveal"><?= e(setting('manifesto')) ?></p>
-        <p class="about__body reveal"><?= e(setting('about_text')) ?></p>
+        <p class="label" data-anim="up">ABOUT NEGAH</p>
+        <p class="about__manifesto" data-split data-anim="up" style="--d:1"><?= e(setting('manifesto')) ?></p>
+        <p class="about__body" data-anim="up" style="--d:2"><?= e(setting('about_text')) ?></p>
       </div>
 
       <div class="about__stats">
-        <?php foreach ($stats as $s): ?>
-          <div class="stat reveal">
-            <span class="stat__value"><?= e(fa_digits($s['value'])) ?></span>
+        <?php foreach ($stats as $i => $s): ?>
+          <div class="stat" data-anim="up" style="--d:<?= min(5, $i) ?>">
+            <span class="stat__value" data-count="<?= e($s['value']) ?>"><?= e(fa_digits($s['value'])) ?></span>
             <span class="stat__label"><?= e($s['label']) ?></span>
           </div>
         <?php endforeach; ?>
@@ -219,17 +304,19 @@ require __DIR__ . '/includes/header.php';
     </div>
   </section>
 
-  <!-- ══════════════ PROCESS ══════════════ -->
+  <!-- ══════════════════ مراحل همکاری ══════════════════ -->
   <section class="sec sec--tint" id="process">
     <div class="wrap">
       <header class="head">
-        <p class="label reveal">PROCESS</p>
-        <h2 class="head__title reveal">مراحل همکاری</h2>
+        <p class="label" data-anim="up">PROCESS</p>
+        <h2 class="head__title" data-anim="up" style="--d:1">مراحل همکاری</h2>
       </header>
 
-      <ol class="steps">
+      <ol class="steps" data-steps>
+        <span class="steps__line" aria-hidden="true"><i></i></span>
         <?php foreach ($steps as $i => $st): ?>
-          <li class="step reveal">
+          <li class="step" data-anim="up" style="--d:<?= min(4, $i) ?>">
+            <span class="step__dot" aria-hidden="true"></span>
             <span class="step__num"><?= e(fa_num($i + 1)) ?></span>
             <h3 class="step__title"><?= e($st['title']) ?></h3>
             <p class="step__desc"><?= e($st['description']) ?></p>
@@ -239,19 +326,19 @@ require __DIR__ . '/includes/header.php';
     </div>
   </section>
 
-  <!-- ══════════════ PROJECTS ══════════════ -->
+  <!-- ══════════════════ نمونه‌کارها ══════════════════ -->
   <?php if ($hasProjects): ?>
   <section class="sec" id="projects">
     <div class="wrap">
       <header class="head">
-        <p class="label reveal">SELECTED WORK</p>
-        <h2 class="head__title reveal">نمونه‌کارها</h2>
+        <p class="label" data-anim="up">SELECTED WORK</p>
+        <h2 class="head__title" data-anim="up" style="--d:1">نمونه‌کارها</h2>
       </header>
 
       <div class="works">
-        <?php foreach ($projects as $p): ?>
+        <?php foreach ($projects as $i => $p): ?>
           <?php $img = media_url($p, 'image_file', 'image_url'); ?>
-          <article class="work reveal">
+          <article class="work" data-anim="up" style="--d:<?= min(5, $i) ?>">
             <?php if ($img): ?>
               <div class="work__media">
                 <?php if (!empty($p['link'])): ?><a href="<?= e($p['link']) ?>" target="_blank" rel="noopener noreferrer"><?php endif; ?>
@@ -271,10 +358,10 @@ require __DIR__ . '/includes/header.php';
   </section>
   <?php endif; ?>
 
-  <!-- ══════════════ CONTACT ══════════════ -->
+  <!-- ══════════════════ تماس ══════════════════ -->
   <section class="sec sec--dark" id="contact">
     <div class="wrap contact">
-      <div class="contact__aside reveal">
+      <div class="contact__aside" data-anim="up">
         <p class="label">START A PROJECT</p>
         <h2 class="contact__title">شروع یک پروژه</h2>
         <p class="contact__lead">هدف، مخاطب و مسئله‌ی برندتان را برای ما بنویسید؛ در اولین فرصت تماس می‌گیریم و مسیر کار را روشن می‌کنیم.</p>
@@ -301,7 +388,7 @@ require __DIR__ . '/includes/header.php';
         </dl>
       </div>
 
-      <div class="contact__form reveal">
+      <div class="contact__form" data-anim="up" style="--d:1">
         <?php if ($formSent): ?>
           <div class="note note--ok">پیام شما ثبت شد. به‌زودی با شما تماس می‌گیریم.</div>
         <?php endif; ?>
@@ -346,7 +433,13 @@ require __DIR__ . '/includes/header.php';
             <textarea id="c-body" name="body" rows="5" required><?= e($old['body']) ?></textarea>
           </div>
 
-          <button class="btn btn--block" type="submit">ارسال درخواست</button>
+          <button class="btn btn--block btn--arrow" type="submit">
+            <span>ارسال درخواست</span>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 12H5M11 18l-6-6 6-6"/>
+            </svg>
+          </button>
           <p class="form__hint">اطلاعات شما فقط برای تماس و بررسی پروژه استفاده می‌شود.</p>
         </form>
       </div>
