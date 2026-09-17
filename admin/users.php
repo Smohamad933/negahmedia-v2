@@ -110,8 +110,9 @@ admin_head('کاربران پنل');
         <input id="full_name" name="full_name" value="<?= e($edit['full_name'] ?? '') ?>">
       </div>
       <div class="f">
-        <label for="email">ایمیل</label>
+        <label for="email">ایمیل <span class="muted">(برای بازیابی رمز)</span></label>
         <input id="email" name="email" dir="ltr" value="<?= e($edit['email'] ?? '') ?>">
+        <p class="hint">اگر رمز فراموش شود، لینک بازیابی به این آدرس ارسال می‌شود.</p>
       </div>
       <div class="f">
         <label for="role">نقش</label>

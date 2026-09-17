@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>ورود به پنل | نگاه مدیا</title>
-<link rel="stylesheet" href="<?= e(url('assets/css/admin.css?v=3')) ?>">
+<link rel="stylesheet" href="<?= e(url('assets/css/admin.css?v=6')) ?>">
 <style>
   .login { min-height: 100vh; display: grid; place-items: center; padding: 26px; }
   .login__card { width: 100%; max-width: 400px; background: #fff; border: 1px solid var(--line); padding: 40px 34px; }
@@ -61,6 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   .login__brand strong { display: block; font-size: 17px; }
   .login__brand small { display: block; font-family: var(--serif); font-size: 8.5px; letter-spacing: .26em; color: var(--muted); }
   .login__card .btn { width: 100%; margin-top: 6px; }
+  .login__forgot { display: block; width: max-content; margin-top: 8px; color: var(--muted); font-size: 12.5px; }
+  .login__forgot:hover { color: var(--accent); }
   .login__back { display: block; text-align: center; margin-top: 22px; font-size: 13.5px; color: var(--muted); }
   .login__back:hover { color: var(--accent); }
   .login__foot { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line-soft); font-size: 12.5px; color: var(--muted); text-align: center; }
@@ -91,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="f">
       <label for="p">رمز عبور</label>
       <input id="p" name="password" type="password" dir="ltr" required autocomplete="current-password">
+      <a class="login__forgot" href="forgot.php">رمز عبور را فراموش کرده‌اید؟</a>
     </div>
 
     <button class="btn" type="submit">ورود به پنل</button>

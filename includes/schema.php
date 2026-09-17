@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 /** نسخه ساختار دیتابیس — با هر تغییر ساختار یک عدد اضافه شود */
-const NEGAH_DB_VERSION = 5;
+const NEGAH_DB_VERSION = 6;
 
 /** @return string[] فهرست دستورات CREATE TABLE */
 function schema_statements(): array
@@ -29,6 +29,19 @@ function schema_statements(): array
                 `k` VARCHAR(64) NOT NULL,
                 `v` TEXT DEFAULT NULL,
                 PRIMARY KEY (`k`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+            "CREATE TABLE IF NOT EXISTS `password_resets` (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `user_id` INT UNSIGNED NOT NULL,
+                `token_hash` CHAR(64) NOT NULL,
+                `expires_at` DATETIME NOT NULL,
+                `used_at` DATETIME DEFAULT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uq_password_reset_token` (`token_hash`),
+                KEY `idx_password_resets_user` (`user_id`),
+                KEY `idx_password_resets_expires` (`expires_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
             "CREATE TABLE IF NOT EXISTS `site_views` (
@@ -156,6 +169,15 @@ function schema_statements(): array
             `v` TEXT DEFAULT NULL
         )",
 
+        "CREATE TABLE IF NOT EXISTS `password_resets` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+            `user_id` INTEGER NOT NULL,
+            `token_hash` TEXT NOT NULL UNIQUE,
+            `expires_at` TEXT NOT NULL,
+            `used_at` TEXT DEFAULT NULL,
+            `created_at` TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        )",
+
         "CREATE TABLE IF NOT EXISTS `site_views` (
             `id` INTEGER PRIMARY KEY AUTOINCREMENT,
             `path` TEXT NOT NULL,
@@ -266,6 +288,8 @@ function schema_indexes(): void
         "CREATE INDEX IF NOT EXISTS `idx_client_gallery_client` ON `client_gallery` (`client_id`)",
         "CREATE INDEX IF NOT EXISTS `idx_site_views_date` ON `site_views` (`viewed_date`)",
         "CREATE INDEX IF NOT EXISTS `idx_site_views_visitor` ON `site_views` (`visitor_hash`)",
+        "CREATE INDEX IF NOT EXISTS `idx_password_resets_user` ON `password_resets` (`user_id`)",
+        "CREATE INDEX IF NOT EXISTS `idx_password_resets_expires` ON `password_resets` (`expires_at`)",
         "CREATE INDEX IF NOT EXISTS `idx_messages_read` ON `messages` (`is_read`)",
     ];
     foreach ($indexes as $sql) {
@@ -406,6 +430,33 @@ function schema_migrate(): void
         db()->exec($viewsSql);
     } catch (Throwable $e) {
         // ثبت بازدید نباید جلوی بالا آمدن سایت را بگیرد.
+    }
+
+    $resetSql = db_driver() === 'mysql'
+        ? "CREATE TABLE IF NOT EXISTS `password_resets` (
+            `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `user_id` INT UNSIGNED NOT NULL,
+            `token_hash` CHAR(64) NOT NULL,
+            `expires_at` DATETIME NOT NULL,
+            `used_at` DATETIME DEFAULT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uq_password_reset_token` (`token_hash`),
+            KEY `idx_password_resets_user` (`user_id`),
+            KEY `idx_password_resets_expires` (`expires_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        : "CREATE TABLE IF NOT EXISTS `password_resets` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+            `user_id` INTEGER NOT NULL,
+            `token_hash` TEXT NOT NULL UNIQUE,
+            `expires_at` TEXT NOT NULL,
+            `used_at` TEXT DEFAULT NULL,
+            `created_at` TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        )";
+    try {
+        db()->exec($resetSql);
+    } catch (Throwable $e) {
+        // درخواست بازیابی نباید باعث خطای عمومی سایت شود.
     }
 
     schema_indexes();

@@ -39,6 +39,21 @@ function url(string $path = ''): string
     return $base . ltrim($path, '/');
 }
 
+/** ساخت آدرس کامل برای لینک‌هایی که در ایمیل ارسال می‌شوند */
+function absolute_url(string $path = ''): string
+{
+    $configured = trim((string) cfg('site_url', ''));
+    if ($configured !== '' && preg_match('~^https?://~i', $configured)) {
+        return rtrim($configured, '/') . '/' . ltrim($path, '/');
+    }
+
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    // از ورود نویسه‌های کنترل یا هدر ساختگی به لینک ایمیل جلوگیری می‌شود.
+    $host = preg_replace('/[^A-Za-z0-9.:[\\]-]/', '', $host) ?: 'localhost';
+    return $scheme . '://' . $host . url($path);
+}
+
 /** مسیر واقعی پوشه آپلود */
 function upload_path(string $relative = ''): string
 {

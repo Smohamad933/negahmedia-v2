@@ -47,7 +47,7 @@ function admin_head(string $title): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title><?= e($title) ?> | پنل نگاه مدیا</title>
-<link rel="stylesheet" href="<?= e(url('assets/css/admin.css?v=3')) ?>">
+<link rel="stylesheet" href="<?= e(url('assets/css/admin.css?v=6')) ?>">
 </head>
 <body>
 <div class="shell">
