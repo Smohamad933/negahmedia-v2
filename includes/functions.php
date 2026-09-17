@@ -39,21 +39,6 @@ function url(string $path = ''): string
     return $base . ltrim($path, '/');
 }
 
-/** ساخت آدرس کامل برای لینک‌هایی که در ایمیل ارسال می‌شوند */
-function absolute_url(string $path = ''): string
-{
-    $configured = trim((string) cfg('site_url', ''));
-    if ($configured !== '' && preg_match('~^https?://~i', $configured)) {
-        return rtrim($configured, '/') . '/' . ltrim($path, '/');
-    }
-
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
-    // از ورود نویسه‌های کنترل یا هدر ساختگی به لینک ایمیل جلوگیری می‌شود.
-    $host = preg_replace('/[^A-Za-z0-9.:[\\]-]/', '', $host) ?: 'localhost';
-    return $scheme . '://' . $host . url($path);
-}
-
 /** مسیر واقعی پوشه آپلود */
 function upload_path(string $relative = ''): string
 {
@@ -224,6 +209,32 @@ function brand_url(array $client): string
 {
     $id = (int) ($client['id'] ?? 0);
     return url('brand.php?id=' . $id);
+}
+
+/** یکسان‌سازی شماره برای مقایسه (ارقام فارسی، فاصله و کد کشور پشتیبانی می‌شود) */
+function normalize_phone(string $phone): string
+{
+    $phone = strtr($phone, [
+        '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
+        '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+        '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+        '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+    ]);
+    $phone = preg_replace('/[^0-9]+/', '', $phone) ?: '';
+    if (substr($phone, 0, 4) === '0098') {
+        $phone = '0' . substr($phone, 4);
+    } elseif (substr($phone, 0, 2) === '98' && strlen($phone) === 12) {
+        $phone = '0' . substr($phone, 2);
+    }
+    return $phone;
+}
+
+/** بررسی شماره ثابت بازیابی */
+function verify_recovery_phone(string $phone): bool
+{
+    $expected = normalize_phone(setting('recovery_phone'));
+    $actual = normalize_phone($phone);
+    return $expected !== '' && $actual !== '' && hash_equals($expected, $actual);
 }
 
 /** بررسی کد ثابت بازیابی بدون نگه‌داری متن خام کد در دیتابیس */

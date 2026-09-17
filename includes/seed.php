@@ -60,9 +60,11 @@ function seed_settings(): array
         'font_external_url'   => '',
         'custom_css'          => '',
         'style_version'       => '1',
-        'db_version'          => '7',
+        'db_version'          => '8',
 
-        /* کد بازیابی ثابت — مقدار خام هرگز در دیتابیس ذخیره نمی‌شود */
+        /* بازیابی رمز: شماره و کد ثابت */
+        'recovery_phone'      => '09046623816',
+        /* کد خام هرگز در دیتابیس ذخیره نمی‌شود */
         'recovery_code_hash'  => '$2y$12$29iBmhtYW264ABnR6gjKO.0NIW1Sx5JPMDnmgBWms8Ke28W8LSACu',
     ];
 }

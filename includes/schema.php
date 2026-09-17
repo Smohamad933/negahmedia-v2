@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 /** نسخه ساختار دیتابیس — با هر تغییر ساختار یک عدد اضافه شود */
-const NEGAH_DB_VERSION = 7;
+const NEGAH_DB_VERSION = 8;
 
 /** @return string[] فهرست دستورات CREATE TABLE */
 function schema_statements(): array

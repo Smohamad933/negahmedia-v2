@@ -31,7 +31,6 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $driver   = ($_POST['driver'] ?? 'sqlite') === 'mysql' ? 'mysql' : 'sqlite';
     $siteName = trim((string) ($_POST['site_name'] ?? ''));
-    $siteUrl  = trim((string) ($_POST['site_url'] ?? ''));
 
     $myHost = trim((string) ($_POST['db_host'] ?? 'localhost'));
     $myName = trim((string) ($_POST['db_name'] ?? ''));
@@ -54,9 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($driver === 'mysql' && ($myName === '' || $myUser === '')) {
         $errors[] = 'نام دیتابیس و نام کاربری MySQL الزامی است.';
-    }
-    if ($siteUrl !== '' && !preg_match('~^https?://[^\s]+$~i', $siteUrl)) {
-        $errors[] = 'آدرس کامل سایت باید با http:// یا https:// شروع شود.';
     }
 
     /* --------- تست اتصال و نصب --------- */
@@ -95,7 +91,6 @@ return [
         'charset' => 'utf8mb4',
     ],
     'base_url'   => '%BASE%',
-    'site_url'   => '%SITE_URL%',
     'upload_dir' => 'uploads/',
     'timezone'   => 'Asia/Tehran',
     'debug'      => false,
@@ -104,8 +99,8 @@ PHP;
 
             $esc = static fn (string $v): string => str_replace(["\\", "'"], ["\\\\", "\\'"], $v);
             $configBody = str_replace(
-                ['%DRIVER%', '%HOST%', '%NAME%', '%USER%', '%PASS%', '%BASE%', '%SITE_URL%'],
-                [$driver, $esc($myHost), $esc($myName), $esc($myUser), $esc($myPass), $esc((string) ($_POST['base_url'] ?? '/')), $esc($siteUrl)],
+                ['%DRIVER%', '%HOST%', '%NAME%', '%USER%', '%PASS%', '%BASE%'],
+                [$driver, $esc($myHost), $esc($myName), $esc($myUser), $esc($myPass), $esc((string) ($_POST['base_url'] ?? '/'))],
                 $tpl
             );
             file_put_contents($cfgFile, $configBody);
@@ -249,9 +244,6 @@ code{background:#F6F4EF;padding:1px 6px;font-family:ui-monospace,Menlo,monospace
       <label>آدرس پایه سایت</label>
       <input name="base_url" dir="ltr" value="<?= htmlspecialchars((string) ($_POST['base_url'] ?? '/'), ENT_QUOTES, 'UTF-8') ?>">
       <div class="hint">اگر سایت در ریشه دامنه است <code>/</code> بگذارید؛ اگر داخل پوشه است مثل <code>/negah/</code>.</div>
-      <label>آدرس کامل سایت <span style="font-weight:400;color:#6E655A">(اختیاری؛ برای لینک بازیابی رمز)</span></label>
-      <input name="site_url" dir="ltr" placeholder="https://example.com" value="<?= htmlspecialchars((string) ($_POST['site_url'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-      <div class="hint">اگر خالی باشد، دامنه درخواست جاری برای ایمیل بازیابی استفاده می‌شود.</div>
     </fieldset>
 
     <fieldset>

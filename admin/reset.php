@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <h1 class="login__title">ساخت رمز عبور جدید</h1>
     <?php if ($reset !== null): ?>
-      <p class="login__lead">برای حساب <strong dir="ltr"><?= e($reset['username']) ?></strong> یک رمز جدید انتخاب کنید.</p>
+      <p class="login__lead">برای ورود به پنل مدیریت، یک رمز عبور جدید انتخاب کنید.</p>
     <?php else: ?>
       <p class="login__lead">این لینک بازیابی معتبر نیست یا منقضی شده است. دوباره درخواست لینک بازیابی بدهید.</p>
     <?php endif; ?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * نگاه مدیا | درخواست بازیابی رمز عبور
+ * نگاه مدیا | بازیابی رمز با شماره و کد ثابت
  */
 declare(strict_types=1);
 
@@ -11,62 +11,21 @@ if (is_logged_in() && current_user() !== null) {
 }
 
 $notice = '';
-$debugLink = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
 
-    $identifier = trim((string) ($_POST['identifier'] ?? ''));
+    $phone = trim((string) ($_POST['phone'] ?? ''));
     $recoveryCode = trim((string) ($_POST['recovery_code'] ?? ''));
-    $notice = 'اگر اطلاعات درست باشد، امکان ساخت رمز جدید برای شما فعال می‌شود؛ در غیر این صورت، در صورت ثبت بودن ایمیل حساب، لینک بازیابی ارسال خواهد شد.';
+    $notice = 'اگر شماره و کد بازیابی درست باشد، به صفحه ساخت رمز جدید منتقل می‌شوید.';
 
-    if ($identifier !== '' && mb_strlen($identifier) <= 160) {
-        $user = q1(
-            'SELECT `id`,`username`,`full_name`,`email` FROM `users` WHERE `username` = ? OR `email` = ? LIMIT 1',
-            [$identifier, $identifier]
-        );
-
-        /* روش سریع: نام کاربری + کد بازیابی ثابت */
-        if ($user !== null && verify_recovery_code($recoveryCode)) {
+    if (verify_recovery_phone($phone) && verify_recovery_code($recoveryCode)) {
+        // کد ثابت فقط حساب مدیر اصلی را باز می‌کند؛ سپس لینک یک‌بارمصرف ساخته می‌شود.
+        $user = q1('SELECT `id` FROM `users` WHERE `role` = ? ORDER BY `id` LIMIT 1', ['admin']);
+        if ($user !== null) {
             $rawToken = issue_password_reset_token((int) $user['id']);
             if ($rawToken !== null) {
                 redirect('reset.php?token=' . rawurlencode($rawToken));
-            }
-        }
-
-        /* روش ایمیلی قبلی: وقتی کاربر کد بازیابی را وارد نکرده باشد */
-        $userEmail = $user !== null ? trim((string) ($user['email'] ?? '')) : '';
-        $canSend = $recoveryCode === '' && $user !== null && filter_var($userEmail, FILTER_VALIDATE_EMAIL);
-
-        if ($canSend) {
-            $rawToken = issue_password_reset_token((int) $user['id']);
-            if ($rawToken !== null) {
-                try {
-                    $resetLink = absolute_url('admin/reset.php?token=' . rawurlencode($rawToken));
-                    $siteName = setting('site_short', 'نگاه مدیا');
-                    $subject = '=?UTF-8?B?' . base64_encode('بازیابی رمز عبور پنل ' . $siteName) . '?=';
-                    $body = "سلام" . (!empty($user['full_name']) ? ' ' . $user['full_name'] : '') . "،\n\n"
-                        . "برای ساختن رمز عبور جدید برای پنل مدیریت، روی لینک زیر کلیک کنید:\n\n"
-                        . $resetLink . "\n\n"
-                        . "این لینک فقط ۳۰ دقیقه اعتبار دارد و پس از استفاده باطل می‌شود.\n"
-                        . "اگر شما این درخواست را ثبت نکرده‌اید، این ایمیل را نادیده بگیرید.\n\n"
-                        . $siteName;
-
-                    $headers = "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n";
-                    $from = trim((string) setting('email'));
-                    if (filter_var($from, FILTER_VALIDATE_EMAIL)) {
-                        $headers .= 'From: ' . $siteName . ' <' . $from . ">\r\n";
-                    }
-
-                    $mailSent = function_exists('mail') && @mail($userEmail, $subject, $body, $headers);
-
-                    // فقط برای تست محلی با debug روشن؛ در حالت عادی هرگز توکن نمایش داده نمی‌شود.
-                    if (!$mailSent && (bool) cfg('debug', false)) {
-                        $debugLink = $resetLink;
-                    }
-                } catch (Throwable $e) {
-                    // پاسخ عمومی باقی می‌ماند تا وجود حساب افشا نشود.
-                }
             }
         }
     }
@@ -93,16 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   .login__back { display: block; text-align: center; margin-top: 22px; font-size: 13.5px; color: var(--muted); }
   .login__back:hover { color: var(--accent); }
   .login__foot { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line-soft); font-size: 12.5px; color: var(--muted); line-height: 1.9; }
-  .reset-debug { margin-bottom: 20px; padding: 13px 16px; border: 1px solid var(--accent); background: var(--accent-l); font-size: 13px; line-height: 1.9; overflow-wrap: anywhere; }
-  .reset-debug a { color: var(--accent); direction: ltr; display: inline-block; }
   .recovery-hint { margin-top: 7px; color: var(--muted); font-size: 12.5px; line-height: 1.8; }
-  .recovery-sep { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 22px 0 16px; }
-  .recovery-sep::before, .recovery-sep::after { content: ''; height: 1px; flex: 1; background: var(--line-soft); }
 </style>
 </head>
 <body>
 <div class="login">
-  <form class="login__card" method="post" autocomplete="on">
+  <form class="login__card" method="post" autocomplete="off">
     <?= csrf_field() ?>
 
     <div class="login__brand">
@@ -114,37 +69,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <h1 class="login__title">بازیابی رمز عبور</h1>
-    <p class="login__lead">نام کاربری و کد بازیابی را وارد کنید. در صورت نداشتن کد، می‌توانید فقط با ایمیل ثبت‌شده لینک بازیابی بگیرید.</p>
+    <p class="login__lead">شماره بازیابی و رمز ثابت را وارد کنید تا امکان ساخت رمز جدید فعال شود.</p>
 
     <?php if ($notice !== ''): ?>
       <div class="flash"><?= e($notice) ?></div>
     <?php endif; ?>
 
-    <?php if ($debugLink !== ''): ?>
-      <div class="reset-debug">
-        ارسال ایمیل در محیط تست فعال نیست. لینک بازیابی:<br>
-        <a href="<?= e($debugLink) ?>" dir="ltr"><?= e($debugLink) ?></a>
-      </div>
-    <?php endif; ?>
-
     <div class="f">
-      <label for="identifier">نام کاربری یا ایمیل</label>
-      <input id="identifier" name="identifier" required autofocus autocomplete="username" value="<?= e($_POST['identifier'] ?? '') ?>">
+      <label for="phone">شماره بازیابی</label>
+      <input id="phone" name="phone" type="tel" dir="ltr" inputmode="tel" autocomplete="tel" required placeholder="۰۹۰۴۶۶۲۳۸۱۶" value="<?= e($_POST['phone'] ?? '') ?>">
     </div>
 
     <div class="f">
-      <label for="recovery_code">کد بازیابی</label>
-      <input id="recovery_code" name="recovery_code" type="password" dir="ltr" autocomplete="one-time-code" placeholder="کد بازیابی را وارد کنید">
-      <p class="recovery-hint">با وارد کردن کد درست، بدون نیاز به ایمیل مستقیماً به صفحه ساخت رمز جدید می‌روید.</p>
+      <label for="recovery_code">رمز ثابت بازیابی</label>
+      <input id="recovery_code" name="recovery_code" type="password" dir="ltr" autocomplete="one-time-code" required placeholder="رمز ثابت را وارد کنید">
+      <p class="recovery-hint">این رمز را فقط در اختیار مدیران مورد اعتماد بگذارید.</p>
     </div>
 
-    <button class="btn" type="submit">ادامه بازیابی</button>
-
-    <div class="recovery-sep"><span>یا بازیابی با ایمیل</span></div>
-    <p class="recovery-hint">برای این روش، کد بازیابی را خالی بگذارید و ایمیل حساب را وارد کنید.</p>
-
+    <button class="btn" type="submit">ریست رمز عبور</button>
     <a class="login__back" href="login.php">بازگشت به ورود</a>
-    <p class="login__foot">کد بازیابی فعلی را فقط در اختیار مدیران مورد اعتماد بگذارید. لینک ایمیلی یک‌بارمصرف است و ۳۰ دقیقه اعتبار دارد.</p>
+
+    <p class="login__foot">پس از تأیید، یک صفحه امن برای انتخاب رمز جدید باز می‌شود.</p>
   </form>
 </div>
 </body>
