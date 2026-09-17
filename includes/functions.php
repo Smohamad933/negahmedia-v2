@@ -226,6 +226,48 @@ function brand_url(array $client): string
     return url('brand.php?id=' . $id);
 }
 
+/** بررسی کد ثابت بازیابی بدون نگه‌داری متن خام کد در دیتابیس */
+function verify_recovery_code(string $code): bool
+{
+    $hash = trim((string) setting('recovery_code_hash'));
+    return $code !== '' && $hash !== '' && password_verify($code, $hash);
+}
+
+/**
+ * ساخت توکن یک‌بارمصرف بازیابی.
+ * مقدار خام فقط برای ساخت لینک همان درخواست برگردانده می‌شود و در دیتابیس هش آن ذخیره می‌شود.
+ */
+function issue_password_reset_token(int $userId): ?string
+{
+    if ($userId <= 0) {
+        return null;
+    }
+
+    try {
+        $now = date('Y-m-d H:i:s');
+        $recent = (int) qv(
+            'SELECT COUNT(*) FROM `password_resets` WHERE `user_id`=? AND `created_at` >= ?',
+            [$userId, date('Y-m-d H:i:s', time() - 3600)],
+            0
+        );
+        if ($recent >= 5) {
+            return null;
+        }
+
+        db_run('DELETE FROM `password_resets` WHERE `expires_at` <= ? OR `used_at` IS NOT NULL', [$now]);
+        db_run('UPDATE `password_resets` SET `used_at`=? WHERE `user_id`=? AND `used_at` IS NULL', [$now, $userId]);
+
+        $token = bin2hex(random_bytes(32));
+        db_run(
+            'INSERT INTO `password_resets` (`user_id`,`token_hash`,`expires_at`) VALUES (?,?,?)',
+            [$userId, hash('sha256', $token), date('Y-m-d H:i:s', time() + 1800)]
+        );
+        return $token;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
 /**
  * ثبت یک بازدید عمومی.
  * فقط درخواست‌های GET صفحات سایت ثبت می‌شوند؛ پنل، فایل‌های استاتیک و ربات‌ها

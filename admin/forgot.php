@@ -17,7 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
 
     $identifier = trim((string) ($_POST['identifier'] ?? ''));
-    $notice = 'اگر حسابی با این مشخصات وجود داشته باشد و ایمیل آن ثبت شده باشد، لینک بازیابی برایتان ارسال می‌شود.';
+    $recoveryCode = trim((string) ($_POST['recovery_code'] ?? ''));
+    $notice = 'اگر اطلاعات درست باشد، امکان ساخت رمز جدید برای شما فعال می‌شود؛ در غیر این صورت، در صورت ثبت بودن ایمیل حساب، لینک بازیابی ارسال خواهد شد.';
 
     if ($identifier !== '' && mb_strlen($identifier) <= 160) {
         $user = q1(
@@ -25,28 +26,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             [$identifier, $identifier]
         );
 
+        /* روش سریع: نام کاربری + کد بازیابی ثابت */
+        if ($user !== null && verify_recovery_code($recoveryCode)) {
+            $rawToken = issue_password_reset_token((int) $user['id']);
+            if ($rawToken !== null) {
+                redirect('reset.php?token=' . rawurlencode($rawToken));
+            }
+        }
+
+        /* روش ایمیلی قبلی: وقتی کاربر کد بازیابی را وارد نکرده باشد */
         $userEmail = $user !== null ? trim((string) ($user['email'] ?? '')) : '';
-        $canSend = $user !== null && filter_var($userEmail, FILTER_VALIDATE_EMAIL);
+        $canSend = $recoveryCode === '' && $user !== null && filter_var($userEmail, FILTER_VALIDATE_EMAIL);
 
         if ($canSend) {
-            $now = date('Y-m-d H:i:s');
-            $recent = (int) qv(
-                'SELECT COUNT(*) FROM `password_resets` WHERE `user_id`=? AND `created_at` >= ?',
-                [(int) $user['id'], date('Y-m-d H:i:s', time() - 3600)],
-                0
-            );
-
-            if ($recent < 5) {
-                // توکن‌های منقضی حذف و لینک‌های قبلی همین کاربر بی‌اعتبار می‌شوند.
-                db_run('DELETE FROM `password_resets` WHERE `expires_at` <= ? OR `used_at` IS NOT NULL', [$now]);
-                db_run('UPDATE `password_resets` SET `used_at`=? WHERE `user_id`=? AND `used_at` IS NULL', [$now, (int) $user['id']]);
+            $rawToken = issue_password_reset_token((int) $user['id']);
+            if ($rawToken !== null) {
                 try {
-                    $rawToken = bin2hex(random_bytes(32));
-                    db_run(
-                        'INSERT INTO `password_resets` (`user_id`,`token_hash`,`expires_at`) VALUES (?,?,?)',
-                        [(int) $user['id'], hash('sha256', $rawToken), date('Y-m-d H:i:s', time() + 1800)]
-                    );
-
                     $resetLink = absolute_url('admin/reset.php?token=' . rawurlencode($rawToken));
                     $siteName = setting('site_short', 'نگاه مدیا');
                     $subject = '=?UTF-8?B?' . base64_encode('بازیابی رمز عبور پنل ' . $siteName) . '?=';
@@ -100,6 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   .login__foot { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line-soft); font-size: 12.5px; color: var(--muted); line-height: 1.9; }
   .reset-debug { margin-bottom: 20px; padding: 13px 16px; border: 1px solid var(--accent); background: var(--accent-l); font-size: 13px; line-height: 1.9; overflow-wrap: anywhere; }
   .reset-debug a { color: var(--accent); direction: ltr; display: inline-block; }
+  .recovery-hint { margin-top: 7px; color: var(--muted); font-size: 12.5px; line-height: 1.8; }
+  .recovery-sep { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 22px 0 16px; }
+  .recovery-sep::before, .recovery-sep::after { content: ''; height: 1px; flex: 1; background: var(--line-soft); }
 </style>
 </head>
 <body>
@@ -116,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <h1 class="login__title">بازیابی رمز عبور</h1>
-    <p class="login__lead">نام کاربری یا ایمیل حساب مدیریت را وارد کنید تا لینک ساخت رمز جدید برایتان ارسال شود.</p>
+    <p class="login__lead">نام کاربری و کد بازیابی را وارد کنید. در صورت نداشتن کد، می‌توانید فقط با ایمیل ثبت‌شده لینک بازیابی بگیرید.</p>
 
     <?php if ($notice !== ''): ?>
       <div class="flash"><?= e($notice) ?></div>
@@ -134,10 +132,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input id="identifier" name="identifier" required autofocus autocomplete="username" value="<?= e($_POST['identifier'] ?? '') ?>">
     </div>
 
-    <button class="btn" type="submit">ارسال لینک بازیابی</button>
-    <a class="login__back" href="login.php">بازگشت به ورود</a>
+    <div class="f">
+      <label for="recovery_code">کد بازیابی</label>
+      <input id="recovery_code" name="recovery_code" type="password" dir="ltr" autocomplete="one-time-code" placeholder="کد بازیابی را وارد کنید">
+      <p class="recovery-hint">با وارد کردن کد درست، بدون نیاز به ایمیل مستقیماً به صفحه ساخت رمز جدید می‌روید.</p>
+    </div>
 
-    <p class="login__foot">لینک بازیابی یک‌بار مصرف است و فقط ۳۰ دقیقه اعتبار دارد.</p>
+    <button class="btn" type="submit">ادامه بازیابی</button>
+
+    <div class="recovery-sep"><span>یا بازیابی با ایمیل</span></div>
+    <p class="recovery-hint">برای این روش، کد بازیابی را خالی بگذارید و ایمیل حساب را وارد کنید.</p>
+
+    <a class="login__back" href="login.php">بازگشت به ورود</a>
+    <p class="login__foot">کد بازیابی فعلی را فقط در اختیار مدیران مورد اعتماد بگذارید. لینک ایمیلی یک‌بارمصرف است و ۳۰ دقیقه اعتبار دارد.</p>
   </form>
 </div>
 </body>
