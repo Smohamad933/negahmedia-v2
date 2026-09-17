@@ -91,15 +91,18 @@ require __DIR__ . '/includes/header.php';
           </header>
 
           <ul class="wall wall--big">
-            <?php foreach ($list as $client): ?>
+            <?php foreach ($list as $ci => $client): ?>
               <?php $logo = media_url($client); ?>
               <li class="wall__cell<?= $logo ? ' has-logo' : '' ?>">
                 <a href="<?= e(brand_url($client)) ?>" title="مشاهده صفحه <?= e($client['name']) ?>">
-                  <?php if ($logo): ?>
-                    <img src="<?= e($logo) ?>" alt="<?= e($client['name']) ?>" loading="lazy" decoding="async">
-                  <?php else: ?>
-                    <span class="wall__name"><?= e($client['name']) ?></span>
-                  <?php endif; ?>
+                  <span class="wall__index" aria-hidden="true">NO. <?= e(fa_num($ci + 1)) ?></span>
+                  <span class="wall__visual">
+                    <?php if ($logo): ?>
+                      <img src="<?= e($logo) ?>" alt="<?= e($client['name']) ?>" loading="lazy" decoding="async">
+                    <?php else: ?>
+                      <span class="wall__name"><?= e($client['name']) ?></span>
+                    <?php endif; ?>
+                  </span>
                   <span class="wall__go" aria-hidden="true">مشاهده صفحه ←</span>
                 </a>
               </li>
