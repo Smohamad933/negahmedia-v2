@@ -44,8 +44,9 @@ $gallery = q(
     [$id]
 );
 
-$logo  = media_url($client);
-$cover = media_url($client, 'cover_file', 'cover_url');
+$logo     = media_url($client);
+$cover    = media_url($client, 'cover_file', 'cover_url');
+$logoMode = client_logo_mode($client);
 $intro = trim((string) ($client['intro'] ?? ''));
 $pageTitle = (string) $client['name'];
 $pageDesc  = $intro !== '' ? $intro : 'معرفی همراه و بخشی از کارهایی که نگاه مدیا برای این برند انجام داده است.';
@@ -91,7 +92,7 @@ require __DIR__ . '/includes/header.php';
           <?php if ($cover): ?>
             <img src="<?= e($cover) ?>" alt="<?= e($client['name']) ?>" loading="eager">
           <?php elseif ($logo): ?>
-            <div class="brand-hero__logo"><img src="<?= e($logo) ?>" alt="لوگوی <?= e($client['name']) ?>"></div>
+            <div class="brand-hero__logo brand-hero__logo--<?= e($logoMode) ?>"><img src="<?= e($logo) ?>" alt="لوگوی <?= e($client['name']) ?>"></div>
           <?php else: ?>
             <div class="brand-hero__wordmark"><?= e($client['name']) ?></div>
           <?php endif; ?>

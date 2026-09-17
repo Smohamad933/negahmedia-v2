@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 /** نسخه ساختار دیتابیس — با هر تغییر ساختار یک عدد اضافه شود */
-const NEGAH_DB_VERSION = 8;
+const NEGAH_DB_VERSION = 9;
 
 /** @return string[] فهرست دستورات CREATE TABLE */
 function schema_statements(): array
@@ -97,6 +97,7 @@ function schema_statements(): array
                 `name` VARCHAR(220) NOT NULL,
                 `logo_file` VARCHAR(255) DEFAULT NULL,
                 `logo_url` VARCHAR(600) DEFAULT NULL,
+                `logo_mode` VARCHAR(12) NOT NULL DEFAULT 'auto',
                 `website` VARCHAR(400) DEFAULT NULL,
                 `intro` TEXT DEFAULT NULL,
                 `cover_file` VARCHAR(255) DEFAULT NULL,
@@ -224,6 +225,7 @@ function schema_statements(): array
             `name` TEXT NOT NULL,
             `logo_file` TEXT DEFAULT NULL,
             `logo_url` TEXT DEFAULT NULL,
+            `logo_mode` TEXT NOT NULL DEFAULT 'auto',
             `website` TEXT DEFAULT NULL,
             `intro` TEXT DEFAULT NULL,
             `cover_file` TEXT DEFAULT NULL,
@@ -333,6 +335,9 @@ function schema_migrate(): void
 {
     $additions = [
         'clients' => [
+            'logo_mode' => db_driver() === 'mysql'
+                ? "ALTER TABLE `clients` ADD COLUMN `logo_mode` VARCHAR(12) NOT NULL DEFAULT 'auto'"
+                : "ALTER TABLE `clients` ADD COLUMN `logo_mode` TEXT NOT NULL DEFAULT 'auto'",
             'featured' => db_driver() === 'mysql'
                 ? "ALTER TABLE `clients` ADD COLUMN `featured` TINYINT(1) NOT NULL DEFAULT 0"
                 : "ALTER TABLE `clients` ADD COLUMN `featured` INTEGER NOT NULL DEFAULT 0",

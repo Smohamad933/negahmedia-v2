@@ -206,8 +206,11 @@ require __DIR__ . '/includes/header.php';
     <div class="logo-strip" data-anim="fade">
       <div class="logo-strip__track">
         <?php foreach ($stripBase as $c): ?>
-          <?php $logo = media_url($c); ?>
-          <div class="logo-strip__cell<?= $logo ? ' has-logo' : '' ?>">
+          <?php
+          $logo = media_url($c);
+          $logoMode = client_logo_mode($c);
+          ?>
+          <div class="logo-strip__cell logo-strip__cell--<?= e($logoMode) ?><?= $logo ? ' has-logo' : '' ?>">
             <a href="<?= e(brand_url($c)) ?>" title="صفحه <?= e($c['name']) ?>">
               <?php if ($logo): ?>
                 <img src="<?= e($logo) ?>" alt="<?= e($c['name']) ?>" loading="lazy" decoding="async">

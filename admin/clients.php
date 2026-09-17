@@ -57,9 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($act === 'client_save') {
         $id      = (int) ($_POST['id'] ?? 0);
         $groupId = (int) ($_POST['group_id'] ?? 0);
-        $name    = trim((string) ($_POST['name'] ?? ''));
-        $logoUrl = trim((string) ($_POST['logo_url'] ?? ''));
-        $website = trim((string) ($_POST['website'] ?? ''));
+        $name     = trim((string) ($_POST['name'] ?? ''));
+        $logoUrl  = trim((string) ($_POST['logo_url'] ?? ''));
+        $logoMode = (string) ($_POST['logo_mode'] ?? 'auto');
+        $logoMode = in_array($logoMode, ['auto', 'mono', 'color'], true) ? $logoMode : 'auto';
+        $website  = trim((string) ($_POST['website'] ?? ''));
         $intro   = trim((string) ($_POST['intro'] ?? ''));
         $coverUrl = trim((string) ($_POST['cover_url'] ?? ''));
         $order   = (int) ($_POST['sort_order'] ?? 0);
@@ -88,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $website = 'https://' . $website;
         }
 
-        // آپلود لوگو و تصویر کاور صفحه اختصاصی
+        // آپلود لوگو و تصویر کاور کارت و صفحه اختصاصی
         $upload = upload_image('logo_file', 'logos', 2);
         if ($upload['error'] !== null) {
             flash($upload['error'], 'err');
@@ -135,14 +137,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             db_run(
-                'UPDATE `clients` SET `group_id`=?,`name`=?,`logo_file`=?,`logo_url`=?,`website`=?,`intro`=?,`cover_file`=?,`cover_url`=?,`featured`=?,`sort_order`=?,`visible`=? WHERE `id`=?',
-                [$groupId, $name, $finalFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $intro !== '' ? $intro : null, $finalCover, $coverUrl !== '' ? $coverUrl : null, $featured, $order, $visible, $id]
+                'UPDATE `clients` SET `group_id`=?,`name`=?,`logo_file`=?,`logo_url`=?,`logo_mode`=?,`website`=?,`intro`=?,`cover_file`=?,`cover_url`=?,`featured`=?,`sort_order`=?,`visible`=? WHERE `id`=?',
+                [$groupId, $name, $finalFile, $logoUrl !== '' ? $logoUrl : null, $logoMode, $website !== '' ? $website : null, $intro !== '' ? $intro : null, $finalCover, $coverUrl !== '' ? $coverUrl : null, $featured, $order, $visible, $id]
             );
             flash('«' . $name . '» به‌روزرسانی شد.');
         } else {
             db_run(
-                'INSERT INTO `clients` (`group_id`,`name`,`logo_file`,`logo_url`,`website`,`intro`,`cover_file`,`cover_url`,`featured`,`sort_order`,`visible`) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-                [$groupId, $name, $newFile, $logoUrl !== '' ? $logoUrl : null, $website !== '' ? $website : null, $intro !== '' ? $intro : null, $newCoverFile, $coverUrl !== '' ? $coverUrl : null, $featured, $order, $visible]
+                'INSERT INTO `clients` (`group_id`,`name`,`logo_file`,`logo_url`,`logo_mode`,`website`,`intro`,`cover_file`,`cover_url`,`featured`,`sort_order`,`visible`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+                [$groupId, $name, $newFile, $logoUrl !== '' ? $logoUrl : null, $logoMode, $website !== '' ? $website : null, $intro !== '' ? $intro : null, $newCoverFile, $coverUrl !== '' ? $coverUrl : null, $featured, $order, $visible]
             );
             flash('«' . $name . '» اضافه شد.');
         }
@@ -305,7 +307,7 @@ admin_head('برندها و لوگوها');
         <input id="logo_file" type="file" name="logo_file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
         <p class="hint">
           فرمت‌های PNG، JPG، WEBP، GIF یا SVG — حداکثر ۲ مگابایت.<br>
-          پیشنهاد: تصویر با پس‌زمینه شفاف و عرض حدود ۴۰۰ پیکسل.
+          اندازه پیشنهادی لوگو: ۸۰۰×۴۰۰ پیکسل (نسبت ۲:۱)، با پس‌زمینه شفاف.
         </p>
         <?php if (!empty($edit['logo_file'])): ?>
           <p class="hint" style="margin-top:10px">
@@ -326,6 +328,16 @@ admin_head('برندها و لوگوها');
     </div>
 
     <div class="f">
+      <label for="logo_mode">نحوه نمایش لوگو در سایت</label>
+      <select id="logo_mode" name="logo_mode">
+        <option value="auto"<?= client_logo_mode($edit ?? []) === 'auto' ? ' selected' : '' ?>>سیاه‌وسفید؛ در حالت hover رنگی شود</option>
+        <option value="mono"<?= client_logo_mode($edit ?? []) === 'mono' ? ' selected' : '' ?>>همیشه سیاه‌وسفید</option>
+        <option value="color"<?= client_logo_mode($edit ?? []) === 'color' ? ' selected' : '' ?>>همیشه رنگی</option>
+      </select>
+      <p class="hint">این انتخاب روی نمایش لوگو در صفحه اصلی، فهرست همراهان و صفحه اختصاصی برند اعمال می‌شود.</p>
+    </div>
+
+    <div class="f">
       <label for="intro">معرفی کوتاه صفحه اختصاصی <span class="muted">(اختیاری)</span></label>
       <textarea id="intro" name="intro" rows="3" placeholder="مثلاً: طراحی هویت بصری و تولید محتوای این برند را از سال ... همراهی کرده‌ایم."><?= e($edit['intro'] ?? '') ?></textarea>
       <p class="hint">این متن بالای صفحه اختصاصی برند نمایش داده می‌شود.</p>
@@ -333,9 +345,9 @@ admin_head('برندها و لوگوها');
 
     <div class="row row--2">
       <div class="f">
-        <label for="cover_file">تصویر اصلی صفحه برند</label>
+        <label for="cover_file">تصویر کاور برند</label>
         <input id="cover_file" type="file" name="cover_file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
-        <p class="hint">اختیاری — پیشنهاد: تصویر افقی با عرض حداقل ۱۲۰۰ پیکسل، حداکثر ۴ مگابایت.</p>
+        <p class="hint">اختیاری — در کارت برند و صفحه اختصاصی نمایش داده می‌شود. اندازه پیشنهادی: ۱۶۰۰×۹۰۰ پیکسل (نسبت ۱۶:۹)، حداکثر ۴ مگابایت.</p>
         <?php if (!empty($edit['cover_file'])): ?>
           <p class="hint" style="margin-top:10px">فایل فعلی: <code dir="ltr"><?= e($edit['cover_file']) ?></code></p>
           <label class="inline" style="margin-top:8px">
@@ -345,7 +357,7 @@ admin_head('برندها و لوگوها');
         <?php endif; ?>
       </div>
       <div class="f">
-        <label for="cover_url">یا آدرس تصویر اصلی</label>
+        <label for="cover_url">یا آدرس تصویر کاور</label>
         <input id="cover_url" name="cover_url" dir="ltr" placeholder="https://example.com/brand-cover.jpg" value="<?= e($edit['cover_url'] ?? '') ?>">
         <p class="hint">اگر فایل آپلود شود، فایل بر لینک اولویت دارد.</p>
       </div>
@@ -466,7 +478,7 @@ admin_head('برندها و لوگوها');
         <?php foreach ($list as $c): ?>
           <?php $src = media_url($c); ?>
           <div class="logo-card">
-            <div class="logo-card__box">
+            <div class="logo-card__box logo-card__box--<?= e(client_logo_mode($c)) ?>">
               <?php if ($src): ?>
                 <img src="<?= e($src) ?>" alt="<?= e($c['name']) ?>" loading="lazy">
               <?php else: ?>

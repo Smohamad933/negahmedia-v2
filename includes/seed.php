@@ -60,7 +60,7 @@ function seed_settings(): array
         'font_external_url'   => '',
         'custom_css'          => '',
         'style_version'       => '1',
-        'db_version'          => '8',
+        'db_version'          => '9',
 
         /* بازیابی رمز: شماره و کد ثابت */
         'recovery_phone'      => '09046623816',

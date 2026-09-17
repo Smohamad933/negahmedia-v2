@@ -92,13 +92,22 @@ require __DIR__ . '/includes/header.php';
 
           <ul class="wall wall--big">
             <?php foreach ($list as $ci => $client): ?>
-              <?php $logo = media_url($client); ?>
-              <li class="wall__cell<?= $logo ? ' has-logo' : '' ?>">
+              <?php
+              $logo = media_url($client);
+              $cover = media_url($client, 'cover_file', 'cover_url');
+              $logoMode = client_logo_mode($client);
+              ?>
+              <li class="wall__cell wall__cell--<?= e($logoMode) ?><?= $logo ? ' has-logo' : '' ?><?= $cover ? ' has-cover' : '' ?>">
                 <a href="<?= e(brand_url($client)) ?>" title="مشاهده صفحه <?= e($client['name']) ?>">
+                  <?php if ($cover): ?>
+                    <span class="wall__cover" aria-hidden="true">
+                      <img src="<?= e($cover) ?>" alt="" loading="lazy" decoding="async">
+                    </span>
+                  <?php endif; ?>
                   <span class="wall__index" aria-hidden="true">NO. <?= e(fa_num($ci + 1)) ?></span>
                   <span class="wall__visual">
                     <?php if ($logo): ?>
-                      <img src="<?= e($logo) ?>" alt="<?= e($client['name']) ?>" loading="lazy" decoding="async">
+                      <span class="wall__logo"><img src="<?= e($logo) ?>" alt="<?= e($client['name']) ?>" loading="lazy" decoding="async"></span>
                     <?php else: ?>
                       <span class="wall__name"><?= e($client['name']) ?></span>
                     <?php endif; ?>

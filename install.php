@@ -112,6 +112,7 @@ PHP;
             require_once __DIR__ . '/includes/seed.php';
 
             schema_create();
+            schema_migrate();
             seed_all($already);   // اگر قبلاً نصب بوده، داده‌ها بازنویسی می‌شوند
 
             if ($siteName !== '') {

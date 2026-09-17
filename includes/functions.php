@@ -204,6 +204,13 @@ function media_url(array $row, string $fileKey = 'logo_file', string $urlKey = '
     return null;
 }
 
+/** حالت نمایش لوگو در فضای عمومی */
+function client_logo_mode(array $client): string
+{
+    $mode = strtolower(trim((string) ($client['logo_mode'] ?? 'auto')));
+    return in_array($mode, ['auto', 'mono', 'color'], true) ? $mode : 'auto';
+}
+
 /** لینک صفحه اختصاصی هر برند — مستقل از وب‌سایت خارجی برند */
 function brand_url(array $client): string
 {

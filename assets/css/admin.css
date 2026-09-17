@@ -307,7 +307,10 @@ td.num { font-variant-numeric: tabular-nums; }
   background: var(--paper); border: 1px solid var(--line-soft);
   padding: 8px;
 }
-.logo-card__box img { max-height: 52px; width: auto; object-fit: contain; }
+.logo-card__box img { max-height: 52px; width: auto; object-fit: contain; transition: filter .3s ease, opacity .3s ease; }
+.logo-card__box--auto img,
+.logo-card__box--mono img { filter: grayscale(1) contrast(1.04); opacity: .78; }
+.logo-card__box--color img { filter: none; opacity: 1; }
 .logo-card__name { font-size: 13.5px; font-weight: 600; line-height: 1.6; }
 .logo-card__meta { font-size: 11.5px; color: var(--muted); }
 .logo-card__act { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }

@@ -217,7 +217,7 @@ admin_head('گالری برندها');
         <div class="f">
           <label for="cover_file">تصویر اصلی / کاور</label>
           <input id="cover_file" type="file" name="cover_file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
-          <p class="hint">PNG، JPG، WEBP، GIF یا SVG — حداکثر ۴ مگابایت. تصویر افقی نتیجه بهتری دارد.</p>
+          <p class="hint">PNG، JPG، WEBP، GIF یا SVG — حداکثر ۴ مگابایت. اندازه پیشنهادی: ۱۶۰۰×۹۰۰ پیکسل (نسبت ۱۶:۹) تا در کارت برند و صفحه اختصاصی بهتر نمایش داده شود.</p>
           <?php if (!empty($selectedClient['cover_file'])): ?>
             <p class="hint">فایل فعلی: <code dir="ltr"><?= e($selectedClient['cover_file']) ?></code></p>
             <label class="inline"><input type="checkbox" name="remove_cover" value="1"> حذف کاور فعلی</label>
