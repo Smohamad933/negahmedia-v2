@@ -1,6 +1,6 @@
 <?php
 /**
- * نگاه مدیا | بازیابی رمز با شماره و کد ثابت
+ * نگاه مدیا | بازیابی نام کاربری و رمز با شماره و کد ثابت
  */
 declare(strict_types=1);
 
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $phone = trim((string) ($_POST['phone'] ?? ''));
     $recoveryCode = trim((string) ($_POST['recovery_code'] ?? ''));
-    $notice = 'اگر شماره و کد بازیابی درست باشد، به صفحه ساخت رمز جدید منتقل می‌شوید.';
+    $notice = 'اگر شماره و کد بازیابی درست باشد، به صفحه تنظیم نام کاربری و رمز جدید منتقل می‌شوید.';
 
     if (verify_recovery_phone($phone) && verify_recovery_code($recoveryCode)) {
         // کد ثابت فقط حساب مدیر اصلی را باز می‌کند؛ سپس لینک یک‌بارمصرف ساخته می‌شود.
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>بازیابی رمز عبور | نگاه مدیا</title>
+<title>بازیابی نام کاربری و رمز عبور | نگاه مدیا</title>
 <link rel="stylesheet" href="<?= e(url('assets/css/admin.css?v=6')) ?>">
 <style>
   .login { min-height: 100vh; display: grid; place-items: center; padding: 26px; }
@@ -68,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </span>
     </div>
 
-    <h1 class="login__title">بازیابی رمز عبور</h1>
-    <p class="login__lead">شماره بازیابی و رمز ثابت را وارد کنید تا امکان ساخت رمز جدید فعال شود.</p>
+    <h1 class="login__title">بازیابی نام کاربری و رمز عبور</h1>
+    <p class="login__lead">شماره بازیابی و رمز ثابت را وارد کنید تا امکان تنظیم نام کاربری و رمز جدید فعال شود.</p>
 
     <?php if ($notice !== ''): ?>
       <div class="flash"><?= e($notice) ?></div>
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <p class="recovery-hint">این رمز را فقط در اختیار مدیران مورد اعتماد بگذارید.</p>
     </div>
 
-    <button class="btn" type="submit">ریست رمز عبور</button>
+    <button class="btn" type="submit">ادامه بازیابی</button>
     <a class="login__back" href="login.php">بازگشت به ورود</a>
 
     <p class="login__foot">پس از تأیید، یک صفحه امن برای انتخاب رمز جدید باز می‌شود.</p>

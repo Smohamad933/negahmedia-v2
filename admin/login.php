@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="f">
       <label for="p">رمز عبور</label>
       <input id="p" name="password" type="password" dir="ltr" required autocomplete="current-password">
-      <a class="login__forgot" href="forgot.php">رمز عبور را فراموش کرده‌اید؟</a>
+      <a class="login__forgot" href="forgot.php">نام کاربری یا رمز عبور را فراموش کرده‌اید؟</a>
     </div>
 
     <button class="btn" type="submit">ورود به پنل</button>
