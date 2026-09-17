@@ -211,6 +211,62 @@ function brand_url(array $client): string
     return url('brand.php?id=' . $id);
 }
 
+/**
+ * ثبت یک بازدید عمومی.
+ * فقط درخواست‌های GET صفحات سایت ثبت می‌شوند؛ پنل، فایل‌های استاتیک و ربات‌ها
+ * به‌صورت طبیعی وارد این جدول نمی‌شوند. شناسه بازدیدکننده نیز به شکل هش‌شده
+ * نگه‌داری می‌شود و IP در دیتابیس ذخیره نمی‌شود.
+ */
+function track_page_view(): void
+{
+    if (defined('NO_SESSION') || (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+        return;
+    }
+
+    $userAgent = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+    if ($userAgent !== '' && preg_match('/bot|crawler|spider|slurp|bingpreview|facebookexternalhit|headless|uptimerobot/i', $userAgent)) {
+        return;
+    }
+
+    $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+    $path = is_string($path) && $path !== '' ? $path : '/';
+    $path = substr($path, 0, 220);
+
+    $token = (string) ($_COOKIE['negah_visitor'] ?? '');
+    if (!preg_match('/^[a-f0-9]{32}$/i', $token)) {
+        try {
+            $token = bin2hex(random_bytes(16));
+        } catch (Throwable $e) {
+            return;
+        }
+
+        $base = (string) cfg('base_url', '/');
+        if ($base === '' || $base[0] !== '/') {
+            $base = '/' . $base;
+        }
+        if (substr($base, -1) !== '/') {
+            $base .= '/';
+        }
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        @setcookie('negah_visitor', $token, [
+            'expires'  => time() + 31536000,
+            'path'     => $base,
+            'secure'   => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+
+    try {
+        db_run(
+            'INSERT INTO `site_views` (`path`,`visitor_hash`,`viewed_date`,`viewed_at`) VALUES (?,?,?,?)',
+            [$path, hash('sha256', $token), date('Y-m-d'), date('Y-m-d H:i:s')]
+        );
+    } catch (Throwable $e) {
+        // آمار نباید باعث خطای سایت شود.
+    }
+}
+
 /** آدرس فایل فونت آپلودی */
 function font_url(?string $relative): ?string
 {

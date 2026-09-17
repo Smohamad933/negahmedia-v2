@@ -60,7 +60,7 @@ function seed_settings(): array
         'font_external_url'   => '',
         'custom_css'          => '',
         'style_version'       => '1',
-        'db_version'          => '4',
+        'db_version'          => '5',
     ];
 }
 

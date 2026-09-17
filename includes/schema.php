@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 /** نسخه ساختار دیتابیس — با هر تغییر ساختار یک عدد اضافه شود */
-const NEGAH_DB_VERSION = 4;
+const NEGAH_DB_VERSION = 5;
 
 /** @return string[] فهرست دستورات CREATE TABLE */
 function schema_statements(): array
@@ -29,6 +29,17 @@ function schema_statements(): array
                 `k` VARCHAR(64) NOT NULL,
                 `v` TEXT DEFAULT NULL,
                 PRIMARY KEY (`k`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+            "CREATE TABLE IF NOT EXISTS `site_views` (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `path` VARCHAR(220) NOT NULL,
+                `visitor_hash` CHAR(64) NOT NULL,
+                `viewed_date` DATE NOT NULL,
+                `viewed_at` DATETIME NOT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_site_views_date` (`viewed_date`),
+                KEY `idx_site_views_visitor` (`visitor_hash`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
             "CREATE TABLE IF NOT EXISTS `stats` (
@@ -145,6 +156,14 @@ function schema_statements(): array
             `v` TEXT DEFAULT NULL
         )",
 
+        "CREATE TABLE IF NOT EXISTS `site_views` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+            `path` TEXT NOT NULL,
+            `visitor_hash` TEXT NOT NULL,
+            `viewed_date` TEXT NOT NULL,
+            `viewed_at` TEXT NOT NULL
+        )",
+
         "CREATE TABLE IF NOT EXISTS `stats` (
             `id` INTEGER PRIMARY KEY AUTOINCREMENT,
             `value` TEXT NOT NULL,
@@ -245,6 +264,8 @@ function schema_indexes(): void
         "CREATE INDEX IF NOT EXISTS `idx_clients_group` ON `clients` (`group_id`)",
         "CREATE INDEX IF NOT EXISTS `idx_clients_featured` ON `clients` (`featured`)",
         "CREATE INDEX IF NOT EXISTS `idx_client_gallery_client` ON `client_gallery` (`client_id`)",
+        "CREATE INDEX IF NOT EXISTS `idx_site_views_date` ON `site_views` (`viewed_date`)",
+        "CREATE INDEX IF NOT EXISTS `idx_site_views_visitor` ON `site_views` (`visitor_hash`)",
         "CREATE INDEX IF NOT EXISTS `idx_messages_read` ON `messages` (`is_read`)",
     ];
     foreach ($indexes as $sql) {
@@ -361,6 +382,30 @@ function schema_migrate(): void
         db()->exec($gallerySql);
     } catch (Throwable $e) {
         // نصب‌های قدیمی باید بدون از دست رفتن داده ادامه پیدا کنند.
+    }
+
+    $viewsSql = db_driver() === 'mysql'
+        ? "CREATE TABLE IF NOT EXISTS `site_views` (
+            `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `path` VARCHAR(220) NOT NULL,
+            `visitor_hash` CHAR(64) NOT NULL,
+            `viewed_date` DATE NOT NULL,
+            `viewed_at` DATETIME NOT NULL,
+            PRIMARY KEY (`id`),
+            KEY `idx_site_views_date` (`viewed_date`),
+            KEY `idx_site_views_visitor` (`visitor_hash`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        : "CREATE TABLE IF NOT EXISTS `site_views` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+            `path` TEXT NOT NULL,
+            `visitor_hash` TEXT NOT NULL,
+            `viewed_date` TEXT NOT NULL,
+            `viewed_at` TEXT NOT NULL
+        )";
+    try {
+        db()->exec($viewsSql);
+    } catch (Throwable $e) {
+        // ثبت بازدید نباید جلوی بالا آمدن سایت را بگیرد.
     }
 
     schema_indexes();

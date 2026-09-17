@@ -16,6 +16,9 @@ $email     = setting('email');
 
 $animOff = setting('anim_level', 'full') === 'off';
 $vers    = setting('style_version', '1');
+
+/* هر بار باز شدن یک صفحه عمومی، یک page view ثبت می‌شود. */
+track_page_view();
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
