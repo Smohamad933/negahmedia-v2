@@ -65,11 +65,6 @@ $steps    = q('SELECT * FROM `process_steps` WHERE `visible` = 1 ORDER BY `sort_
 $stats    = q('SELECT * FROM `stats` WHERE `visible` = 1 ORDER BY `sort_order`, `id`');
 $projects = q('SELECT * FROM `projects` WHERE `visible` = 1 ORDER BY `sort_order`, `id` LIMIT 9');
 
-$byGroup = [];
-foreach ($clients as $c) {
-    $byGroup[(int) $c['group_id']][] = $c;
-}
-
 /* ---------- انتخاب برندهای صفحه اصلی ---------- */
 $homeMode  = setting('clients_home_mode', 'featured');
 $homeCount = (int) setting('clients_home_count', '14');
@@ -77,17 +72,15 @@ $homeCount = (int) setting('clients_home_count', '14');
 if ($homeMode === 'featured') {
     $featured = array_values(array_filter($clients, static fn(array $c) => (int) $c['featured'] === 1));
     if ($featured === []) {
-        $featured = $clients;   // اگر موردی ویژه نشده باشد، همه نمایش داده می‌شوند
+        $featured = $clients;
     }
-    $usingFallback = $featured === $clients && $clients !== [];
 } else {
     $featured = $clients;
-    $usingFallback = false;
 }
 
 $featured = $homeCount > 0 ? array_slice($featured, 0, $homeCount) : [];
 
-/* تکرار برای پر شدن عرض نوار متحرک */
+/* تکرار برای پر شدن عرض نوار لوگو */
 $stripBase = $featured;
 if ($stripBase !== []) {
     $repeat = 1;
@@ -100,20 +93,17 @@ if ($stripBase !== []) {
             $padded[] = $item;
         }
     }
-    $stripBase = array_merge($padded, $padded);   // دو نیمه یکسان برای حلقه بی‌وقفه
+    $stripBase = array_merge($padded, $padded);
 }
 
-$totalClients   = count($clients);
-$hasProjects    = $projects !== [];
-$hasClientsSec  = $featured !== [] && $homeCount > 0;
-$bandText       = trim(setting('band_text'));
-
-/* کلمات تیتر هیرو برای انیمیشن ورود */
-$heroTitle = setting('hero_title');
-$heroWords = array_values(array_filter(preg_split('/\s+/u', $heroTitle) ?: []));
-
-$phone = setting('phone');
-$email = setting('email');
+$totalClients  = count($clients);
+$hasProjects   = $projects !== [];
+$hasClientsSec = $featured !== [] && $homeCount > 0;
+$bandText      = trim(setting('band_text'));
+$heroStats     = array_slice($stats, 0, 3);
+$heroStats[]   = ['value' => '+' . $totalClients, 'label' => 'برند و همراه'];
+$phone         = setting('phone');
+$email         = setting('email');
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -121,101 +111,164 @@ require __DIR__ . '/includes/header.php';
 <main id="main">
 
   <!-- ══════════════════ HERO ══════════════════ -->
-  <section class="hero">
-    <div class="wrap hero__grid">
-      <div class="hero__main">
-        <p class="kicker" data-anim="up" style="--d:0"><?= setting('hero_kicker') ?></p>
+  <section class="hero" id="home">
+    <div class="hero__ambient"></div>
+    <div class="wrap">
+      <div class="hero__center">
+        <p class="hero__eyebrow" data-anim="up">
+          <span class="hero__eyebrow-dot"></span>
+          <?= e(html_entity_decode(strip_tags(setting('hero_kicker', 'CREATIVE & ADVERTISING AGENCY')), ENT_QUOTES, 'UTF-8')) ?>
+        </p>
 
-        <h1 class="hero__title" aria-label="<?= e($heroTitle) ?>">
-          <?php foreach ($heroWords as $i => $w): ?>
-            <span class="w" aria-hidden="true" style="--i:<?= (int) $i ?>"><i><?= e($w) ?></i></span>
-          <?php endforeach; ?>
-        </h1>
+        <h1 class="hero__title" data-anim="up" style="--d:1"><?= e(setting('hero_title')) ?></h1>
+        <p class="hero__sub" data-anim="up" style="--d:2"><?= e(setting('hero_sub')) ?></p>
 
-        <p class="hero__sub" data-anim="up" style="--d:3"><?= e(setting('hero_sub')) ?></p>
-
-        <div class="hero__cta" data-anim="up" style="--d:4">
-          <a class="btn btn--arrow" href="#contact">
+        <div class="hero__cta" data-anim="up" style="--d:3">
+          <a class="btn btn--royal btn--arrow" href="#contact">
             <span><?= e(setting('cta_primary', 'شروع یک پروژه')) ?></span>
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M19 12H5M11 18l-6-6 6-6"/>
             </svg>
           </a>
-          <?php if ($hasProjects): ?>
-            <a class="btn btn--ghost" href="#projects"><?= e(setting('cta_secondary', 'دیدن نمونه‌کارها')) ?></a>
-          <?php else: ?>
-            <a class="btn btn--ghost" href="#services">دیدن خدمات</a>
-          <?php endif; ?>
+          <a class="btn btn--royal-ghost" href="#projects"><?= e(setting('cta_secondary', 'دیدن نمونه‌کارها')) ?></a>
+        </div>
+
+        <div class="hero__stats" data-anim="up" style="--d:4">
+          <?php foreach ($heroStats as $i => $stat): ?>
+            <div class="hero-stat">
+              <strong><?= e(fa_digits((string) ($stat['value'] ?? '—'))) ?></strong>
+              <span><?= e($stat['label'] ?? '') ?></span>
+            </div>
+          <?php endforeach; ?>
         </div>
       </div>
-
-      <aside class="hero__side" data-anim="right" style="--d:2">
-        <div class="hero__tag">
-          <span class="hero__tagline"><?= e(setting('hero_tagline')) ?></span>
-        </div>
-        <dl class="hero__meta">
-          <div>
-            <dt>حوزه کار</dt>
-            <dd>برندینگ · محتوا · کمپین · دیجیتال</dd>
-          </div>
-          <div>
-            <dt>دفتر</dt>
-            <dd><?= e(setting('address', 'اهواز')) ?></dd>
-          </div>
-          <?php if ($phone !== ''): ?>
-          <div>
-            <dt>تماس</dt>
-            <dd><a href="tel:<?= e($phone) ?>" dir="ltr"><?= e(fa_digits($phone)) ?></a></dd>
-          </div>
-          <?php endif; ?>
-        </dl>
-      </aside>
     </div>
   </section>
 
-  <!-- ══════════════════ نوار چرخان کوچک ══════════════════ -->
+  <!-- ══════════════════ نوار چرخان ══════════════════ -->
   <div class="ticker" aria-hidden="true">
     <div class="ticker__track">
       <?php
-      $words = ['هویت بصری', 'تولید محتوا', 'کمپین تبلیغاتی', 'دیجیتال مارکتینگ', 'طراحی وب', 'عکاسی', 'سوشال مدیا', 'استراتژی برند'];
+      $tickerWords = ['تدوین سینمایی', 'موشن‌گرافیک', 'هویت بصری', 'تیزر تبلیغاتی', 'طراحی صدا', 'کالرگرید', 'تولید محتوا', 'نگاه متفاوت'];
       for ($i = 0; $i < 2; $i++):
-          foreach ($words as $w): ?>
-            <span><?= e($w) ?></span><i>◆</i>
+          foreach ($tickerWords as $word): ?>
+            <span><?= e($word) ?></span><i>◆</i>
           <?php endforeach;
       endfor; ?>
     </div>
   </div>
 
-  <!-- ══════════════════ همراهان (نمونه ویژه) ══════════════════ -->
-  <?php if ($hasClientsSec): ?>
-  <section class="sec sec--clients" id="clients">
+  <!-- ══════════════════ نمونه‌کارها ══════════════════ -->
+  <?php if ($hasProjects): ?>
+  <section class="section portfolio-section" id="projects">
     <div class="wrap">
-      <header class="head head--row">
+      <header class="section-heading section-heading--split">
         <div>
-          <p class="label" data-anim="up">CLIENTS &amp; PARTNERS</p>
-          <h2 class="head__title" data-anim="up" style="--d:1">برندها و همراهان</h2>
-          <p class="head__lead" data-anim="up" style="--d:2"><?= e(setting('clients_lead')) ?></p>
+          <span class="section-eyebrow">NEGAH SHOWCASE</span>
+          <h2>ویترین آثار برگزیده</h2>
         </div>
-        <div class="head__aside" data-anim="up" style="--d:3">
-          <span class="head__count"><?= e(fa_digits((string) $totalClients)) ?> <small>همراه</small></span>
+        <p>روایت‌های بصری با تلفیق تدوین داینامیک، کالرگرید اختصاصی و هماهنگی دقیق صدا و تصویر.</p>
+      </header>
+
+      <div class="works">
+        <?php foreach ($projects as $i => $project): ?>
+          <?php $image = media_url($project, 'image_file', 'image_url'); ?>
+          <article class="work<?= $i === 0 ? ' work--featured' : '' ?>" data-anim="up" style="--d:<?= min(5, $i) ?>">
+            <div class="work__media">
+              <?php if ($image): ?>
+                <?php if (!empty($project['link'])): ?><a href="<?= e($project['link']) ?>" target="_blank" rel="noopener noreferrer" aria-label="مشاهده <?= e($project['title']) ?>"><?php endif; ?>
+                  <img src="<?= e($image) ?>" alt="<?= e($project['title']) ?>" loading="lazy" decoding="async">
+                  <span class="work__shade"></span>
+                <?php if (!empty($project['link'])): ?></a><?php endif; ?>
+              <?php else: ?>
+                <div class="work__placeholder">
+                  <span>NO. <?= e(fa_num($i + 1)) ?></span>
+                  <strong><?= e($project['title']) ?></strong>
+                </div>
+              <?php endif; ?>
+              <?php if (!empty($project['category'])): ?><span class="work__badge"><?= e($project['category']) ?></span><?php endif; ?>
+            </div>
+            <div class="work__body">
+              <span class="work__index">NO. <?= e(fa_num($i + 1)) ?></span>
+              <h3 class="work__title"><?= e($project['title']) ?></h3>
+              <?php if (!empty($project['description'])): ?><p class="work__desc"><?= e($project['description']) ?></p><?php endif; ?>
+            </div>
+          </article>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+  <?php else: ?>
+  <section class="section portfolio-section" id="projects">
+    <div class="wrap">
+      <header class="section-heading section-heading--split">
+        <div>
+          <span class="section-eyebrow">NEGAH SHOWCASE</span>
+          <h2>ویترین آثار برگزیده</h2>
         </div>
+        <p>ویترین پروژه‌ها در حال تکمیل است؛ برای شروع روایت تصویری برندتان با ما در تماس باشید.</p>
+      </header>
+      <div class="work-empty">
+        <span class="work-empty__mark">✦</span>
+        <h3>اولین قاب، می‌تواند برای برند شما باشد.</h3>
+        <p>نمونه‌کارهای منتخب نگاه مدیا به‌زودی در این بخش نمایش داده می‌شوند.</p>
+        <a class="btn btn--royal" href="#contact">شروع یک پروژه</a>
+      </div>
+    </div>
+  </section>
+  <?php endif; ?>
+
+  <!-- ══════════════════ خدمات ══════════════════ -->
+  <section class="section services-section" id="services">
+    <div class="wrap">
+      <header class="section-heading">
+        <span class="section-eyebrow">SERVICES</span>
+        <h2>خدمات استودیو نگاه مدیا</h2>
+        <p>ارائه پکیج یکپارچه پس‌تولید و دیزاین بصری برای خلق اثری ماندگار در نگاه مخاطبان شما.</p>
+      </header>
+
+      <div class="service-grid">
+        <?php foreach ($services as $i => $service): ?>
+          <article class="service-card" data-anim="up" style="--d:<?= min(5, $i) ?>">
+            <div class="service-card__top">
+              <span class="service-card__number"><?= e(fa_num($i + 1)) ?></span>
+              <span class="service-card__icon" aria-hidden="true">✦</span>
+            </div>
+            <h3><?= e($service['title']) ?></h3>
+            <p><?= e($service['description']) ?></p>
+            <span class="service-card__line" aria-hidden="true"></span>
+          </article>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ همراهان ══════════════════ -->
+  <?php if ($hasClientsSec): ?>
+  <section class="section clients-section" id="clients">
+    <div class="wrap">
+      <header class="section-heading section-heading--split">
+        <div>
+          <span class="section-eyebrow">CLIENTS &amp; PARTNERS</span>
+          <h2>برندها و همراهان</h2>
+        </div>
+        <p><?= e(setting('clients_lead')) ?></p>
       </header>
     </div>
 
     <div class="logo-strip" data-anim="fade">
       <div class="logo-strip__track">
-        <?php foreach ($stripBase as $c): ?>
+        <?php foreach ($stripBase as $client): ?>
           <?php
-          $logo = media_url($c);
-          $logoMode = client_logo_mode($c);
+          $logo = media_url($client);
+          $logoMode = client_logo_mode($client);
           ?>
           <div class="logo-strip__cell logo-strip__cell--<?= e($logoMode) ?><?= $logo ? ' has-logo' : '' ?>">
-            <a href="<?= e(brand_url($c)) ?>" title="صفحه <?= e($c['name']) ?>">
+            <a href="<?= e(brand_url($client)) ?>" title="صفحه <?= e($client['name']) ?>">
               <?php if ($logo): ?>
-                <img src="<?= e($logo) ?>" alt="<?= e($c['name']) ?>" loading="lazy" decoding="async">
+                <img src="<?= e($logo) ?>" alt="<?= e($client['name']) ?>" loading="lazy" decoding="async">
               <?php else: ?>
-                <span class="logo-strip__name"><?= e($c['name']) ?></span>
+                <span class="logo-strip__name"><?= e($client['name']) ?></span>
               <?php endif; ?>
             </a>
           </div>
@@ -223,81 +276,29 @@ require __DIR__ . '/includes/header.php';
       </div>
     </div>
 
-    <div class="wrap">
-      <div class="clients-cta" data-anim="up">
-        <a class="btn btn--ghost btn--arrow" href="<?= e(url('clients.php')) ?>">
-          <span><?= e(setting('clients_all_label', 'دیدن همه همراهان')) ?></span>
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M19 12H5M11 18l-6-6 6-6"/>
-          </svg>
-        </a>
-        <span class="clients-cta__hint">
-          <?= e(fa_digits((string) count($featured))) ?> مورد در این صفحه ·
-          فهرست کامل در صفحه همراهان
-        </span>
-      </div>
+    <div class="wrap clients-section__foot">
+      <span><?= e(fa_digits((string) $totalClients)) ?> برند و همراه در پروژه‌های نگاه مدیا</span>
+      <a class="btn btn--royal-ghost btn--sm" href="<?= e(url('clients.php')) ?>">
+        <?= e(setting('clients_all_label', 'دیدن همه همراهان')) ?>
+        <span aria-hidden="true">←</span>
+      </a>
     </div>
   </section>
   <?php endif; ?>
 
-  <!-- ══════════════════ نوار بزرگ متحرک ══════════════════ -->
-  <?php if ($bandText !== ''): ?>
-  <div class="band" aria-hidden="true">
-    <?php
-    $bandItems = array_values(array_filter(array_map('trim', explode('|', $bandText))));
-    if ($bandItems === []) {
-        $bandItems = [$bandText];
-    }
-    ?>
-    <div class="band__row band__row--a">
-      <?php for ($r = 0; $r < 3; $r++): foreach ($bandItems as $bi): ?>
-        <span><?= e($bi) ?></span><b>◆</b>
-      <?php endforeach; endfor; ?>
-    </div>
-    <div class="band__row band__row--b">
-      <?php for ($r = 0; $r < 3; $r++): foreach ($bandItems as $bi): ?>
-        <span class="outline"><?= e($bi) ?></span><b>◆</b>
-      <?php endforeach; endfor; ?>
-    </div>
-  </div>
-  <?php endif; ?>
-
-  <!-- ══════════════════ خدمات ══════════════════ -->
-  <section class="sec sec--tint" id="services">
-    <div class="wrap">
-      <header class="head">
-        <p class="label" data-anim="up">SERVICES</p>
-        <h2 class="head__title" data-anim="up" style="--d:1">خدمات</h2>
-      </header>
-
-      <ol class="srv">
-        <?php foreach ($services as $i => $s): ?>
-          <li class="srv__row" data-anim="up" style="--d:<?= min(6, $i) ?>">
-            <span class="srv__num"><?= e(fa_num($i + 1)) ?></span>
-            <h3 class="srv__title"><?= e($s['title']) ?></h3>
-            <p class="srv__desc"><?= e($s['description']) ?></p>
-            <span class="srv__rule" aria-hidden="true"></span>
-          </li>
-        <?php endforeach; ?>
-      </ol>
-    </div>
-  </section>
-
-  <!-- ══════════════════ درباره + آمار ══════════════════ -->
-  <section class="sec" id="about">
+  <!-- ══════════════════ درباره ══════════════════ -->
+  <section class="section about-section" id="about">
     <div class="wrap about">
       <div class="about__txt">
-        <p class="label" data-anim="up">ABOUT NEGAH</p>
-        <p class="about__manifesto" data-split data-anim="up" style="--d:1"><?= e(setting('manifesto')) ?></p>
-        <p class="about__body" data-anim="up" style="--d:2"><?= e(setting('about_text')) ?></p>
+        <span class="section-eyebrow">ABOUT NEGAH</span>
+        <p class="about__manifesto"><?= e(setting('manifesto')) ?></p>
+        <p class="about__body"><?= e(setting('about_text')) ?></p>
       </div>
-
       <div class="about__stats">
-        <?php foreach ($stats as $i => $s): ?>
-          <div class="stat" data-anim="up" style="--d:<?= min(5, $i) ?>">
-            <span class="stat__value" data-count="<?= e($s['value']) ?>"><?= e(fa_digits($s['value'])) ?></span>
-            <span class="stat__label"><?= e($s['label']) ?></span>
+        <?php foreach ($stats as $i => $stat): ?>
+          <div class="stat" data-anim="up" style="--d:<?= min(4, $i) ?>">
+            <strong><?= e(fa_digits((string) $stat['value'])) ?></strong>
+            <span><?= e($stat['label']) ?></span>
           </div>
         <?php endforeach; ?>
       </div>
@@ -305,113 +306,82 @@ require __DIR__ . '/includes/header.php';
   </section>
 
   <!-- ══════════════════ مراحل همکاری ══════════════════ -->
-  <section class="sec sec--tint" id="process">
+  <section class="section process-section" id="process">
     <div class="wrap">
-      <header class="head">
-        <p class="label" data-anim="up">PROCESS</p>
-        <h2 class="head__title" data-anim="up" style="--d:1">مراحل همکاری</h2>
+      <header class="section-heading section-heading--center">
+        <span class="section-eyebrow">WORKFLOW</span>
+        <h2>مسیر همکاری با استودیو نگاه</h2>
+        <p>نظم، شفافیت و توجه وسواس‌گونه به جزئیات از فریم اول تا لحظه انتشار.</p>
       </header>
 
-      <ol class="steps" data-steps>
-        <span class="steps__line" aria-hidden="true"><i></i></span>
-        <?php foreach ($steps as $i => $st): ?>
+      <ol class="steps">
+        <?php foreach ($steps as $i => $step): ?>
           <li class="step" data-anim="up" style="--d:<?= min(4, $i) ?>">
-            <span class="step__dot" aria-hidden="true"></span>
-            <span class="step__num"><?= e(fa_num($i + 1)) ?></span>
-            <h3 class="step__title"><?= e($st['title']) ?></h3>
-            <p class="step__desc"><?= e($st['description']) ?></p>
+            <span class="step__number"><?= e(fa_num($i + 1)) ?></span>
+            <h3><?= e($step['title']) ?></h3>
+            <p><?= e($step['description']) ?></p>
           </li>
         <?php endforeach; ?>
       </ol>
     </div>
   </section>
 
-  <!-- ══════════════════ نمونه‌کارها ══════════════════ -->
-  <?php if ($hasProjects): ?>
-  <section class="sec" id="projects">
-    <div class="wrap">
-      <header class="head">
-        <p class="label" data-anim="up">SELECTED WORK</p>
-        <h2 class="head__title" data-anim="up" style="--d:1">نمونه‌کارها</h2>
-      </header>
-
-      <div class="works">
-        <?php foreach ($projects as $i => $p): ?>
-          <?php $img = media_url($p, 'image_file', 'image_url'); ?>
-          <article class="work" data-anim="up" style="--d:<?= min(5, $i) ?>">
-            <?php if ($img): ?>
-              <div class="work__media">
-                <?php if (!empty($p['link'])): ?><a href="<?= e($p['link']) ?>" target="_blank" rel="noopener noreferrer"><?php endif; ?>
-                  <img src="<?= e($img) ?>" alt="<?= e($p['title']) ?>" loading="lazy" decoding="async">
-                <?php if (!empty($p['link'])): ?></a><?php endif; ?>
-              </div>
-            <?php endif; ?>
-            <div class="work__body">
-              <?php if (!empty($p['category'])): ?><span class="work__cat"><?= e($p['category']) ?></span><?php endif; ?>
-              <h3 class="work__title"><?= e($p['title']) ?></h3>
-              <?php if (!empty($p['description'])): ?><p class="work__desc"><?= e($p['description']) ?></p><?php endif; ?>
-            </div>
-          </article>
-        <?php endforeach; ?>
-      </div>
+  <!-- ══════════════════ نوار برند ══════════════════ -->
+  <?php if ($bandText !== ''): ?>
+  <div class="band" aria-hidden="true">
+    <?php $bandItems = array_values(array_filter(array_map('trim', explode('|', $bandText)))) ?: [$bandText]; ?>
+    <div class="band__row band__row--a">
+      <?php for ($r = 0; $r < 3; $r++): foreach ($bandItems as $item): ?>
+        <span><?= e($item) ?></span><b>◆</b>
+      <?php endforeach; endfor; ?>
     </div>
-  </section>
+    <div class="band__row band__row--b">
+      <?php for ($r = 0; $r < 3; $r++): foreach ($bandItems as $item): ?>
+        <span class="outline"><?= e($item) ?></span><b>◆</b>
+      <?php endforeach; endfor; ?>
+    </div>
+  </div>
   <?php endif; ?>
 
-  <!-- ══════════════════ تماس ══════════════════ -->
-  <section class="sec sec--dark" id="contact">
+  <!-- ══════════════════ تماس و سفارش ══════════════════ -->
+  <section class="section contact-section" id="contact">
     <div class="wrap contact">
-      <div class="contact__aside" data-anim="up">
-        <p class="label">START A PROJECT</p>
-        <h2 class="contact__title">شروع یک پروژه</h2>
-        <p class="contact__lead">هدف، مخاطب و مسئله‌ی برندتان را برای ما بنویسید؛ در اولین فرصت تماس می‌گیریم و مسیر کار را روشن می‌کنیم.</p>
+      <div class="contact__aside">
+        <span class="section-eyebrow">CONTACT &amp; BRIEF</span>
+        <h2 class="contact__title">ثبت سفارش و مشاوره پروژه</h2>
+        <p class="contact__lead">اطلاعات اولیه پروژه خود را وارد کنید تا تیم استودیو با شما تماس بگیرد و مسیر همکاری را روشن کنیم.</p>
 
         <dl class="contact__meta">
           <?php if ($phone !== ''): ?>
-            <div>
-              <dt>تلفن</dt>
-              <dd><a href="tel:<?= e($phone) ?>" dir="ltr"><?= e(fa_digits($phone)) ?></a></dd>
-            </div>
+            <div><dt>تلفن</dt><dd><a href="tel:<?= e($phone) ?>" dir="ltr"><?= e(fa_digits($phone)) ?></a></dd></div>
           <?php endif; ?>
           <?php if ($email !== ''): ?>
-            <div>
-              <dt>ایمیل</dt>
-              <dd><a href="mailto:<?= e($email) ?>" dir="ltr"><?= e($email) ?></a></dd>
-            </div>
+            <div><dt>ایمیل</dt><dd><a href="mailto:<?= e($email) ?>" dir="ltr"><?= e($email) ?></a></dd></div>
           <?php endif; ?>
           <?php if (setting('address') !== ''): ?>
-            <div>
-              <dt>دفتر</dt>
-              <dd><?= e(setting('address')) ?></dd>
-            </div>
+            <div><dt>دفتر</dt><dd><?= e(setting('address')) ?></dd></div>
           <?php endif; ?>
         </dl>
       </div>
 
-      <div class="contact__form" data-anim="up" style="--d:1">
+      <div class="contact__form">
         <?php if ($formSent): ?>
           <div class="note note--ok">پیام شما ثبت شد. به‌زودی با شما تماس می‌گیریم.</div>
         <?php endif; ?>
-
         <?php if ($formErrors): ?>
-          <div class="note note--err">
-            <ul><?php foreach ($formErrors as $er): ?><li><?= e($er) ?></li><?php endforeach; ?></ul>
-          </div>
+          <div class="note note--err"><ul><?php foreach ($formErrors as $error): ?><li><?= e($error) ?></li><?php endforeach; ?></ul></div>
         <?php endif; ?>
 
         <form method="post" action="#contact" novalidate>
           <?= csrf_field() ?>
           <input type="hidden" name="form" value="contact">
           <input type="hidden" name="opened_at" value="<?= e((string) time()) ?>">
-          <div class="trap" aria-hidden="true">
-            <label>وب‌سایت<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
-          </div>
+          <div class="trap" aria-hidden="true"><label>وب‌سایت<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 
           <div class="f">
             <label for="c-name">نام و نام خانوادگی</label>
             <input id="c-name" name="name" required autocomplete="name" value="<?= e($old['name']) ?>">
           </div>
-
           <div class="f2">
             <div class="f">
               <label for="c-phone">شماره تماس</label>
@@ -422,21 +392,17 @@ require __DIR__ . '/includes/header.php';
               <input id="c-email" name="email" type="email" dir="ltr" autocomplete="email" value="<?= e($old['email']) ?>">
             </div>
           </div>
-
           <div class="f">
             <label for="c-subject">موضوع همکاری <span class="opt">اختیاری</span></label>
             <input id="c-subject" name="subject" value="<?= e($old['subject']) ?>">
           </div>
-
           <div class="f">
             <label for="c-body">توضیح پروژه</label>
             <textarea id="c-body" name="body" rows="5" required><?= e($old['body']) ?></textarea>
           </div>
-
-          <button class="btn btn--block btn--arrow" type="submit">
-            <span>ارسال درخواست</span>
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <button class="btn btn--royal btn--block btn--arrow" type="submit">
+            <span>ارسال درخواست مشاوره</span>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M19 12H5M11 18l-6-6 6-6"/>
             </svg>
           </button>

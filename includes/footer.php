@@ -21,9 +21,9 @@ $socials = array_filter([
         <a class="foot__logo" href="<?= e(url()) ?>" aria-label="<?= e($siteShort) ?>">
           <span class="foot__mark" aria-hidden="true">
             <svg viewBox="0 0 40 40" role="img" aria-hidden="true" focusable="false">
-              <rect width="40" height="40" fill="#F0EBE3"/>
+              <rect width="40" height="40" fill="#F2D3BC"/>
               <text x="20" y="28" text-anchor="middle" font-size="22" font-weight="700"
-                    font-family="Vazirmatn, Tahoma, sans-serif" fill="#0C0A09">ن</text>
+                    font-family="Vazirmatn, Tahoma, sans-serif" fill="#0B111B">ن</text>
               <rect x="0" y="36" width="40" height="4" fill="#0A9F83" class="foot__mark-bar"/>
             </svg>
           </span>

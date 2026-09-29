@@ -16,6 +16,7 @@ $email     = setting('email');
 
 $animOff = setting('anim_level', 'full') === 'off';
 $vers    = setting('style_version', '1');
+$assetVers = $vers . '-royal-1';
 
 /* هر بار باز شدن یک صفحه عمومی، یک page view ثبت می‌شود. */
 track_page_view();
@@ -27,7 +28,7 @@ track_page_view();
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?></title>
 <meta name="description" content="<?= e($desc) ?>">
-<meta name="theme-color" content="#F6F4EF">
+<meta name="theme-color" content="#080C12">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="fa_IR">
 <meta property="og:site_name" content="<?= e($siteShort) ?>">
@@ -36,7 +37,7 @@ track_page_view();
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="<?= e(url('assets/favicon.svg')) ?>" type="image/svg+xml">
 <link rel="preload" href="<?= e(url('assets/fonts/Vazirmatn-Variable.woff2')) ?>" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="<?= e(url('assets/css/style.css?v=' . $vers)) ?>">
+<link rel="stylesheet" href="<?= e(url('assets/css/style.css?v=' . $assetVers)) ?>">
 <link rel="stylesheet" href="<?= e(url('assets/css/theme.php?v=' . $vers)) ?>">
 <script>document.documentElement.className += ' js';</script>
 <script type="application/ld+json">
@@ -61,6 +62,19 @@ track_page_view();
 
 <a class="skip" href="#main">رفتن به محتوا</a>
 
+<div class="palette-banner" aria-label="پالت رنگی نگاه مدیا">
+  <div class="palette-banner__in">
+    <span class="palette-banner__title"><i></i> پالت سلطنتی الهام‌گرفته از دست‌بافته‌های اصیل ایرانی</span>
+    <div class="palette-banner__chips" aria-hidden="true">
+      <span class="palette-chip"><b style="--chip:#4E2629"></b>زرشکی لاکی</span>
+      <span class="palette-chip"><b style="--chip:#F2D3BC"></b>کرم عاجی</span>
+      <span class="palette-chip"><b style="--chip:#2E3D30"></b>سبز یشمی</span>
+      <span class="palette-chip"><b style="--chip:#0F383D"></b>فیروزه‌ای</span>
+      <span class="palette-chip"><b style="--chip:#111D2E"></b>لاجوردی</span>
+    </div>
+  </div>
+</div>
+
 <header class="nav" id="top" data-nav>
   <div class="nav__in">
 
@@ -70,7 +84,7 @@ track_page_view();
         <svg viewBox="0 0 40 40" role="img" aria-hidden="true" focusable="false">
           <rect width="40" height="40" fill="currentColor"/>
           <text x="20" y="28" text-anchor="middle" font-size="22" font-weight="700"
-                font-family="Vazirmatn, Tahoma, sans-serif" fill="#F6F4EF">ن</text>
+                font-family="Vazirmatn, Tahoma, sans-serif" fill="#F2D3BC">ن</text>
           <rect x="0" y="36" width="40" height="4" class="brand__mark-bar"/>
         </svg>
       </span>

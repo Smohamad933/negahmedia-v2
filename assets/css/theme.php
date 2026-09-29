@@ -86,9 +86,9 @@ h1, h2, h3, h4, h5, .hero__title, .head__title, .about__manifesto,
   font-family: var(--font-head);
 }
 
-/* دکمه بازگشت به بالا و خطوط پیشرفت از رنگ تأکیدی */
+/* در هویت سلطنتی، عناصر تأکیدی اصلی با رنگ کرم عاجی ثابت می‌مانند. */
 .totop:hover,
-.progress__bar { background: var(--accent); }
+.progress__bar { background: var(--nude); }
 
 /* ═══════════════ ۵. CSS سفارشی مدیر ═══════════════ */
 <?= sanitize_custom_css(setting('custom_css')) ?>
