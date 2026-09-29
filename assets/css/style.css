@@ -134,7 +134,7 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.35; font-weight: 800; }
 .palette-banner__title { display: inline-flex; align-items: center; gap: 8px; color: var(--nude); font-weight: 600; white-space: nowrap; }
 .palette-banner__title i { width: 7px; height: 7px; display: inline-block; border-radius: 50%; background: var(--nude); box-shadow: 0 0 15px rgba(242,211,188,.7); }
 .palette-banner__chips { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
-.palette-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid rgba(226,232,240,.08); background: rgba(0,0,0,.2); color: var(--muted); transition: transform .2s, border-color .2s, color .2s; }
+.palette-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid rgba(226,232,240,.08); border-radius: 4px; background: rgba(0,0,0,.2); color: var(--muted); transition: transform .2s, border-color .2s, color .2s; }
 .palette-chip:hover { transform: translateY(-1px); border-color: var(--line-strong); color: var(--nude); }
 .palette-chip b { width: 10px; height: 10px; display: inline-block; border: 1px solid rgba(255,255,255,.25); background: var(--chip); }
 
@@ -172,7 +172,7 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.35; font-weight: 800; }
 .call__txt strong { color: var(--nude); font-size: 15px; font-weight: 800; letter-spacing: .02em; }
 
 /* ══════════════════ دکمه‌ها و تیترهای مشترک ══════════════════ */
-.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 12px 24px; border: 1px solid transparent; font-size: 14px; font-weight: 800; overflow: hidden; transition: transform .3s var(--ease), background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease), box-shadow .3s var(--ease); }
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 12px 24px; border: 1px solid transparent; border-radius: 999px; font-size: 14px; font-weight: 800; overflow: hidden; transition: transform .3s var(--ease), background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease), box-shadow .3s var(--ease); }
 .btn::before { content: ''; position: absolute; inset: 0; z-index: 0; background: rgba(255,255,255,.15); transform: scaleX(0); transform-origin: right; transition: transform .4s var(--ease-out); }
 .btn > * { position: relative; z-index: 1; }
 .btn:hover { transform: translateY(-3px); }

@@ -66,11 +66,11 @@ track_page_view();
   <div class="palette-banner__in">
     <span class="palette-banner__title"><i></i> پالت سلطنتی الهام‌گرفته از دست‌بافته‌های اصیل ایرانی</span>
     <div class="palette-banner__chips" aria-hidden="true">
-      <span class="palette-chip"><b style="--chip:#4E2629"></b>زرشکی لاکی</span>
-      <span class="palette-chip"><b style="--chip:#F2D3BC"></b>کرم عاجی</span>
-      <span class="palette-chip"><b style="--chip:#2E3D30"></b>سبز یشمی</span>
-      <span class="palette-chip"><b style="--chip:#0F383D"></b>فیروزه‌ای</span>
-      <span class="palette-chip"><b style="--chip:#111D2E"></b>لاجوردی</span>
+      <span class="palette-chip"><b style="--chip:#4E2629"></b>4975 CP · زرشکی لاکی</span>
+      <span class="palette-chip"><b style="--chip:#F2D3BC"></b>12-0911 · کرم عاجی</span>
+      <span class="palette-chip"><b style="--chip:#2E3D30"></b>19-5918 · سبز یشمی</span>
+      <span class="palette-chip"><b style="--chip:#0F383D"></b>20-0161 · فیروزه‌ای</span>
+      <span class="palette-chip"><b style="--chip:#111D2E"></b>20-0141 · لاجوردی</span>
     </div>
   </div>
 </div>

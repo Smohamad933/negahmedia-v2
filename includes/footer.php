@@ -24,7 +24,7 @@ $socials = array_filter([
               <rect width="40" height="40" fill="#F2D3BC"/>
               <text x="20" y="28" text-anchor="middle" font-size="22" font-weight="700"
                     font-family="Vazirmatn, Tahoma, sans-serif" fill="#0B111B">ن</text>
-              <rect x="0" y="36" width="40" height="4" fill="#0A9F83" class="foot__mark-bar"/>
+              <rect x="0" y="36" width="40" height="4" fill="#F2D3BC" class="foot__mark-bar"/>
             </svg>
           </span>
           <span class="foot__brand-txt">
